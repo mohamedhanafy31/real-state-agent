@@ -38,25 +38,37 @@ jobs:
 
           if [[ "${GITHUB_EVENT_NAME}" == "push" && -n "${GITHUB_SHA:-}" ]]; then
             BASE_SHA="${GITHUB_EVENT_BEFORE:-}"
+
+            # If GitHub didn't provide a valid "before" SHA (e.g. first push),
+            # try to derive a parent commit. In very shallow clones this may
+            # still fail, in which case we just deploy everything.
             if [[ -z "${BASE_SHA}" || "${BASE_SHA}" == "0000000000000000000000000000000000000000" ]]; then
-              BASE_SHA="HEAD~1"
+              if git rev-parse HEAD^ >/dev/null 2>&1; then
+                BASE_SHA="$(git rev-parse HEAD^)"
+              else
+                BASE_SHA=""
+              fi
             fi
 
-            echo "Comparing changes between ${BASE_SHA} and ${GITHUB_SHA}"
-            CHANGED_FILES="$(git diff --name-only "${BASE_SHA}" "${GITHUB_SHA}")"
+            if [[ -n "${BASE_SHA}" ]]; then
+              echo "Comparing changes between ${BASE_SHA} and ${GITHUB_SHA}"
+              CHANGED_FILES="$(git diff --name-only "${BASE_SHA}" "${GITHUB_SHA}")"
 
-            DEPLOY_FRONTEND=0
-            DEPLOY_RAG=0
-            DEPLOY_ORCH=0
+              DEPLOY_FRONTEND=0
+              DEPLOY_RAG=0
+              DEPLOY_ORCH=0
 
-            if echo "${CHANGED_FILES}" | grep -E '^Ai-P/|^scripts/deploy_cloud_run\.sh' >/dev/null; then
-              DEPLOY_FRONTEND=1
-            fi
-            if echo "${CHANGED_FILES}" | grep -E '^ai/rag/|^scripts/deploy_cloud_run\.sh' >/dev/null; then
-              DEPLOY_RAG=1
-            fi
-            if echo "${CHANGED_FILES}" | grep -E '^ai/orchestrator/|^scripts/deploy_cloud_run\.sh' >/dev/null; then
-              DEPLOY_ORCH=1
+              if echo "${CHANGED_FILES}" | grep -E '^Ai-P/|^scripts/deploy_cloud_run\.sh' >/dev/null; then
+                DEPLOY_FRONTEND=1
+              fi
+              if echo "${CHANGED_FILES}" | grep -E '^ai/rag/|^scripts/deploy_cloud_run\.sh' >/dev/null; then
+                DEPLOY_RAG=1
+              fi
+              if echo "${CHANGED_FILES}" | grep -E '^ai/orchestrator/|^scripts/deploy_cloud_run\.sh' >/dev/null; then
+                DEPLOY_ORCH=1
+              fi
+            else
+              echo "No valid base commit found; deploying all services."
             fi
           fi
 
