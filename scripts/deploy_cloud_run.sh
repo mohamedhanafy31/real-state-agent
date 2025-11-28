@@ -39,25 +39,63 @@ start_build() {
 
 wait_for_build() {
   local build_id="$1"
+  local service_name="${2:-build}"
 
-  echo "    Waiting for build ${build_id} to complete..." >&2
+  echo "    [${service_name}] Waiting for build ${build_id} to complete..." >&2
   # Poll build status without streaming logs (avoids logs bucket perms)
   while true; do
     status="$(gcloud builds describe "${build_id}" --format='value(status)')"
     case "${status}" in
       SUCCESS)
-        echo "    Build ${build_id} succeeded." >&2
+        echo "    [${service_name}] ✓ Build ${build_id} succeeded." >&2
         break
         ;;
       FAILURE|CANCELLED)
-        echo "✗ Build ${build_id} failed with status: ${status}" >&2
-        exit 1
+        echo "✗ [${service_name}] Build ${build_id} failed with status: ${status}" >&2
+        return 1
         ;;
       *)
         sleep 5
         ;;
     esac
   done
+}
+
+deploy_service() {
+  local service_name="$1"
+  local image="$2"
+  shift 2
+  local deploy_args=("$@")
+  
+  echo "==> [${service_name}] Deploying to Cloud Run..." >&2
+  local url
+  url=$(gcloud run deploy "${service_name}" \
+    --image "${image}" \
+    --region "${REGION}" \
+    --allow-unauthenticated \
+    "${deploy_args[@]}" \
+    --format='value(status.url)')
+  echo "✓ [${service_name}] Deployed at ${url}" >&2
+  printf '%s\n' "${url}"
+}
+
+# Function to build and deploy a service
+build_and_deploy() {
+  local service_name="$1"
+  local dir="$2"
+  local image="$3"
+  shift 3
+  local deploy_args=("$@")
+  
+  local build_id
+  build_id="$(start_build "${dir}" "${image}")"
+  
+  if ! wait_for_build "${build_id}" "${service_name}"; then
+    echo "✗ [${service_name}] Build failed, aborting deployment" >&2
+    return 1
+  fi
+  
+  deploy_service "${service_name}" "${image}" "${deploy_args[@]}"
 }
 
 require_env() {
@@ -79,68 +117,95 @@ if ! gcloud artifacts repositories describe metavr-services --location="${REGION
     --description="Containers for frontend, RAG, orchestrator"
 fi
 
-echo "==> Starting Cloud Build jobs in parallel"
-FRONTEND_BUILD_ID=""
-RAG_BUILD_ID=""
-ORCH_BUILD_ID=""
-
-# Don't build frontend yet - we need orchestrator URL first for build args
-if [[ "${DEPLOY_RAG}" == "1" || "${DEPLOY_RAG}" == "true" ]]; then
-  RAG_BUILD_ID="$(start_build "ai/rag" "${RAG_IMAGE}")"
-fi
-if [[ "${DEPLOY_ORCH}" == "1" || "${DEPLOY_ORCH}" == "true" ]]; then
-  ORCH_BUILD_ID="$(start_build "ai/orchestrator" "${ORCH_IMAGE}")"
-fi
-
-if [[ -n "${RAG_BUILD_ID}" ]]; then
-  wait_for_build "${RAG_BUILD_ID}"
-fi
-if [[ -n "${ORCH_BUILD_ID}" ]]; then
-  wait_for_build "${ORCH_BUILD_ID}"
-fi
-
 require_env GEMINI_API_KEY
 require_env JWT_SECRET
 
 ASR_API_URL=${ASR_API_URL:-https://arabic-asr-api-22251281831.us-central1.run.app}
 TTS_API_URL=${TTS_API_URL:-https://arabic-tts-api-22251281831.us-central1.run.app}
 
+# Start all builds in parallel and deploy as soon as each completes
+echo "==> Starting all builds in parallel - deploying each service as its build completes"
 RAG_URL="${RAG_API_URL:-}"
 ORCH_URL="${ORCH_API_URL:-}"
+RAG_PID=""
+ORCH_PID=""
+RAG_TMPFILE=$(mktemp)
+ORCH_TMPFILE=$(mktemp)
 
+# Start RAG build and deploy in background
 if [[ "${DEPLOY_RAG}" == "1" || "${DEPLOY_RAG}" == "true" ]]; then
-  echo "==> Deploying RAG Cloud Run service"
-  # For now, allow all origins (will be updated after frontend is deployed if needed)
-  # Cloud Run services can be updated later with specific CORS origins
-  RAG_URL=$(gcloud run deploy rag-api \
-    --image "${RAG_IMAGE}" \
-    --region "${REGION}" \
-    --memory=4Gi \
-    --allow-unauthenticated \
-    --set-env-vars "GEMINI_API_KEY=${GEMINI_API_KEY}" \
-    --set-env-vars "LOG_LEVEL=INFO" \
-    --set-env-vars "CORS_ORIGINS=*" \
-    --format='value(status.url)')
-  echo "✓ RAG deployed at ${RAG_URL}"
+  (
+    build_and_deploy "rag-api" "ai/rag" "${RAG_IMAGE}" \
+      --memory=4Gi \
+      --set-env-vars "GEMINI_API_KEY=${GEMINI_API_KEY}" \
+      --set-env-vars "LOG_LEVEL=INFO" \
+      --set-env-vars "CORS_ORIGINS=*" > "${RAG_TMPFILE}"
+  ) &
+  RAG_PID=$!
+  echo "  Started RAG build+deploy (PID: ${RAG_PID})"
 fi
 
+# Start Orchestrator build and deploy in background
+# Note: Orchestrator deployment needs RAG_URL, so we'll handle that after RAG completes
 if [[ "${DEPLOY_ORCH}" == "1" || "${DEPLOY_ORCH}" == "true" ]]; then
-  echo "==> Deploying orchestrator Cloud Run service"
-  # For now, allow all origins (will be updated after frontend is deployed if needed)
-  # Cloud Run services can be updated later with specific CORS origins
-  ORCH_URL=$(gcloud run deploy orchestrator \
-    --image "${ORCH_IMAGE}" \
-    --region "${REGION}" \
-    --allow-unauthenticated \
-    --set-env-vars "RAG_API_URL=${RAG_URL}" \
-    --set-env-vars "ASR_API_URL=${ASR_API_URL}" \
-    --set-env-vars "TTS_API_URL=${TTS_API_URL}" \
-    --set-env-vars "JWT_SECRET=${JWT_SECRET}" \
-    --set-env-vars "CORS_ORIGINS=*" \
-    --format='value(status.url)')
-  echo "✓ Orchestrator deployed at ${ORCH_URL}"
+  (
+    # First, build the orchestrator
+    ORCH_BUILD_ID="$(start_build "ai/orchestrator" "${ORCH_IMAGE}")"
+    if ! wait_for_build "${ORCH_BUILD_ID}" "Orchestrator"; then
+      echo "✗ Orchestrator build failed" >&2
+      exit 1
+    fi
+    
+    # Wait for RAG URL if RAG is being deployed
+    if [[ -n "${RAG_PID}" ]]; then
+      echo "    [Orchestrator] Waiting for RAG deployment to get RAG_URL..."
+      wait "${RAG_PID}" 2>/dev/null || true
+      RAG_URL=$(cat "${RAG_TMPFILE}" 2>/dev/null || echo "")
+      if [[ -z "${RAG_URL}" ]]; then
+        echo "⚠️  Warning: RAG_URL not available, using default or empty"
+        RAG_URL="${RAG_API_URL:-}"
+      fi
+    fi
+    
+    # Now deploy orchestrator with RAG_URL
+    deploy_service "orchestrator" "${ORCH_IMAGE}" \
+      --set-env-vars "RAG_API_URL=${RAG_URL}" \
+      --set-env-vars "ASR_API_URL=${ASR_API_URL}" \
+      --set-env-vars "TTS_API_URL=${TTS_API_URL}" \
+      --set-env-vars "JWT_SECRET=${JWT_SECRET}" \
+      --set-env-vars "CORS_ORIGINS=*" > "${ORCH_TMPFILE}"
+  ) &
+  ORCH_PID=$!
+  echo "  Started Orchestrator build+deploy (PID: ${ORCH_PID})"
 fi
 
+# Wait for RAG to complete and get its URL
+if [[ -n "${RAG_PID}" ]]; then
+  echo "==> Waiting for RAG build and deployment to complete..."
+  if wait "${RAG_PID}"; then
+    RAG_URL=$(cat "${RAG_TMPFILE}" 2>/dev/null || echo "")
+    echo "✓ RAG deployment completed: ${RAG_URL}"
+  else
+    echo "✗ RAG deployment failed"
+    exit 1
+  fi
+  rm -f "${RAG_TMPFILE}"
+fi
+
+# Wait for Orchestrator to complete and get its URL
+if [[ -n "${ORCH_PID}" ]]; then
+  echo "==> Waiting for Orchestrator build and deployment to complete..."
+  if wait "${ORCH_PID}"; then
+    ORCH_URL=$(cat "${ORCH_TMPFILE}" 2>/dev/null || echo "")
+    echo "✓ Orchestrator deployment completed: ${ORCH_URL}"
+  else
+    echo "✗ Orchestrator deployment failed"
+    exit 1
+  fi
+  rm -f "${ORCH_TMPFILE}"
+fi
+
+# Build and deploy frontend (needs orchestrator URL)
 ORCH_WS_URL=""
 if [[ -n "${ORCH_URL}" ]]; then
   ORCH_WS_URL="${ORCH_URL/https:/wss:}"
@@ -150,10 +215,16 @@ fi
 
 FRONTEND_URL="${FRONTEND_URL:-}"
 if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
-  # Build frontend with orchestrator URLs as build args
-  echo "==> Building frontend with orchestrator URLs"
-  if [[ -n "${ORCH_URL}" && -n "${ORCH_WS_URL}" ]]; then
-    # Use Cloud Build with cloudbuild.yaml to pass build args
+  if [[ -z "${ORCH_URL}" || -z "${ORCH_WS_URL}" ]]; then
+    echo "⚠️  Warning: Orchestrator URL not available, building frontend without build args"
+    FRONTEND_BUILD_ID="$(start_build "Ai-P" "${FRONTEND_IMAGE}")"
+    wait_for_build "${FRONTEND_BUILD_ID}" "Frontend"
+    FRONTEND_URL=$(deploy_service "ai-p" "${FRONTEND_IMAGE}" \
+      --set-env-vars "NEXT_PUBLIC_ORCHESTRATOR_URL=${ORCH_URL}" \
+      --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}")
+  else
+    # Build frontend with orchestrator URLs as build args
+    echo "==> Building frontend with orchestrator URLs"
     FRONTEND_BUILD_ID="$(
       cd "Ai-P" && \
       gcloud builds submit \
@@ -163,26 +234,14 @@ if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
         --format='value(name)'
     )"
     echo "    Frontend build started with ID: ${FRONTEND_BUILD_ID}"
-    wait_for_build "${FRONTEND_BUILD_ID}"
-  else
-    echo "⚠️  Warning: Orchestrator URL not available, building frontend without build args"
-    FRONTEND_BUILD_ID="$(start_build "Ai-P" "${FRONTEND_IMAGE}")"
-    wait_for_build "${FRONTEND_BUILD_ID}"
+    wait_for_build "${FRONTEND_BUILD_ID}" "Frontend"
+    
+    echo "==> Deploying frontend Cloud Run service"
+    FRONTEND_URL=$(deploy_service "ai-p" "${FRONTEND_IMAGE}" \
+      --set-env-vars "NEXT_PUBLIC_ORCHESTRATOR_URL=${ORCH_URL}" \
+      --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}")
   fi
   
-  echo "==> Deploying frontend Cloud Run service"
-  FRONTEND_URL=$(gcloud run deploy ai-p \
-    --image "${FRONTEND_IMAGE}" \
-    --region "${REGION}" \
-    --allow-unauthenticated \
-    --set-env-vars "NEXT_PUBLIC_ORCHESTRATOR_URL=${ORCH_URL}" \
-    --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}" \
-    --format='value(status.url)')
-  echo "✓ Frontend deployed at ${FRONTEND_URL}"
-  
-  # Update CORS origins for RAG and Orchestrator to include frontend URL
-  # Note: For Cloud Run, we allow all origins (*) since FastAPI doesn't support wildcard patterns
-  # In production, you may want to set specific origins for better security
   if [[ -n "${FRONTEND_URL}" ]]; then
     echo "==> CORS is configured to allow all origins (*) for Cloud Run compatibility"
     echo "    To restrict CORS, set CORS_ORIGINS env var with comma-separated specific URLs"
@@ -208,8 +267,10 @@ if [[ "${UPDATE_GITHUB_SECRETS:-0}" == "1" ]]; then
   fi
 fi
 
+echo ""
+echo "=========================================="
 echo "All services deployed successfully:"
 echo "  Frontend: ${FRONTEND_URL}"
 echo "  Orchestrator: ${ORCH_URL}"
 echo "  RAG API: ${RAG_URL}"
-
+echo "=========================================="
