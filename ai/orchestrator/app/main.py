@@ -50,10 +50,25 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS middleware - configure allowed origins from environment
+cors_origins = settings.cors_origins
+if cors_origins == "*":
+    allow_origins = ["*"]
+else:
+    # Split comma-separated origins and strip whitespace
+    # Filter out wildcard patterns (FastAPI doesn't support them directly)
+    origins_list = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+    allow_origins = [origin for origin in origins_list if "*" not in origin]
+    # If we have wildcard patterns, default to allow all
+    if any("*" in origin for origin in origins_list):
+        logger.warning("Wildcard patterns in CORS_ORIGINS not supported, allowing all origins")
+        allow_origins = ["*"]
+
+logger.info(f"CORS configured with origins: {allow_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

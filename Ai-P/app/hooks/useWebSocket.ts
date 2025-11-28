@@ -5,7 +5,54 @@ import { useAppStore } from '@/store/useAppStore';
 import type { GalleryUnit, ServerMessage, ErrorMessage } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:8040/ws/voice';
+// Dynamically determine WebSocket URL based on environment
+function getWebSocketUrl(): string {
+  // If explicitly set via env var, use it
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    return process.env.NEXT_PUBLIC_WS_URL;
+  }
+  
+  // If running in browser, check the current location
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const fullUrl = window.location.href;
+    
+    console.log('[WebSocket] Detecting WebSocket URL:', {
+      hostname,
+      protocol: window.location.protocol,
+      fullUrl,
+      isNgrok: hostname.includes('ngrok-free.app') || hostname.includes('ngrok.io'),
+      isCloudRun: hostname.includes('.run.app')
+    });
+    
+    // Check if we're on Cloud Run - construct orchestrator URL from frontend URL
+    if (hostname.includes('.run.app')) {
+      // Cloud Run URLs have pattern: service-hash-region.a.run.app
+      // Frontend: ai-p-dbgj63mjca-uc.a.run.app
+      // Orchestrator: orchestrator-dbgj63mjca-uc.a.run.app
+      // Replace the service name prefix to get orchestrator URL
+      const orchestratorHostname = hostname.replace(/^ai-p-/, 'orchestrator-');
+      const wsUrl = `${protocol}//${orchestratorHostname}/ws/voice`;
+      console.log('[WebSocket] ✅ Using Cloud Run orchestrator URL (constructed):', wsUrl);
+      return wsUrl;
+    }
+    
+    // Check if we're on ngrok
+    if (hostname.includes('ngrok-free.app') || hostname.includes('ngrok.io')) {
+      // When accessed via ngrok with nginx proxy, use same origin for WebSocket
+      // Nginx will proxy /ws/voice to localhost:8040
+      const wsUrl = `${protocol}//${hostname}/ws/voice`;
+      console.log('[WebSocket] ✅ Using same origin for WebSocket (nginx will proxy):', wsUrl);
+      return wsUrl;
+    } else {
+      console.log('[WebSocket] ℹ️ Not on ngrok or Cloud Run, using localhost');
+    }
+  }
+  
+  // Default to localhost
+  return 'ws://localhost:8040/ws/voice';
+}
 const STATIC_ORCHESTRATOR_TOKEN = process.env.NEXT_PUBLIC_ORCHESTRATOR_TOKEN;
 const RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY = [1000, 2000, 4000]; // Exponential backoff
@@ -30,6 +77,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     const ttsQueueInfoRef = useRef<{queued: number, nextSeq: number} | null>(null);
     const awaitingServerResponseRef = useRef(false);
     const tokenCacheRef = useRef<{ token: string; expiresAt: number } | null>(null);
+    const startSessionSentRef = useRef(false); // Track if start_session has been sent
     
     // Update ref when options change, but don't recreate callbacks
     useEffect(() => {
@@ -288,6 +336,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                     setSessionId(null);
                     // Reset connection tracking to allow reconnection
                     reconnectAttemptsRef.current = 0;
+                    // Reset start_session flag for next connection
+                    startSessionSentRef.current = false;
                     
                     // IMPORTANT: The orchestrator closes the WebSocket after sending session_closed
                     // We need to close our side too and create a new connection for the next session
@@ -405,8 +455,33 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             }
         }
 
+        // Get WebSocket URL dynamically (in case we're on ngrok or Cloud Run)
+        // Force detection by checking window.location directly
+        let wsUrl: string;
+        if (typeof window !== 'undefined') {
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            
+            console.log('[WebSocket] 🔍 DEBUG - Current location:', {
+                hostname,
+                protocol: window.location.protocol,
+                href: window.location.href,
+                isNgrok: hostname.includes('ngrok-free.app') || hostname.includes('ngrok.io'),
+                isCloudRun: hostname.includes('.run.app')
+            });
+            
+            if (hostname.includes('ngrok-free.app') || hostname.includes('ngrok.io')) {
+                wsUrl = `${protocol}//${hostname}/ws/voice`;
+                console.log('[WebSocket] ✅ Using ngrok URL:', wsUrl);
+            } else {
+                wsUrl = getWebSocketUrl();
+            }
+        } else {
+            wsUrl = getWebSocketUrl();
+        }
+        
         console.log('[OrchestratorAPI] 🔌 Initiating WebSocket connection:', {
-            url: WS_URL,
+            url: wsUrl,
             existingSessionId: sessionId,
             reconnectAttempt: reconnectAttemptsRef.current,
             timestamp: connectStartTime
@@ -414,8 +489,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
         setConnectionStatus('connecting');
         connectionStartTimeRef.current = connectStartTime;
+        
+        // Reset start_session flag for new connection
+        startSessionSentRef.current = false;
 
-        const ws = new WebSocket(WS_URL);
+        const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
         setWebSocket(ws);
 
@@ -476,8 +554,18 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                 timestamp: performance.now()
             });
 
+            // Mark that start_session has been sent - now audio chunks can be sent
+            startSessionSentRef.current = true;
             messageCountRef.current.sent++;
             audioChunkStatsRef.current = { count: 0, totalSize: 0, firstChunkTime: null, lastChunkTime: null };
+            
+            // Process any queued audio chunks that were waiting for start_session
+            // The queue processor will now be able to send them since startSessionSentRef is true
+            if (audioChunkQueueRef.current.length > 0) {
+                console.log('[OrchestratorAPI] 📤 start_session sent, queued audio chunks will be processed:', {
+                    queuedChunks: audioChunkQueueRef.current.length
+                });
+            }
 
             // Assume successful authentication (in production, wait for acknowledgment)
             setTimeout(() => {
@@ -570,6 +658,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
             return false;
         }
+        
+        // CRITICAL: Don't send audio chunks until start_session has been sent
+        // This prevents "First message must be 'start_session'" error
+        if (!startSessionSentRef.current) {
+            console.warn('[OrchestratorAPI] ⚠️ Cannot send audio chunk - start_session not sent yet. Queueing...');
+            return false; // Will be retried once start_session is sent
+        }
 
         const sendStartTime = performance.now();
         const audioSize = base64Audio.length;
@@ -661,6 +756,14 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             return;
         }
 
+        // Check if start_session has been sent before processing chunks
+        if (!startSessionSentRef.current) {
+            // Put chunk back at front and wait for start_session
+            audioChunkQueueRef.current.unshift(chunk);
+            audioChunkThrottleTimerRef.current = null;
+            return;
+        }
+        
         const seq = ++sequenceRef.current;
         const sent = _sendAudioChunkImmediate(chunk.base64Audio, chunk.sessionId, seq);
         
@@ -668,6 +771,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             // If send failed, put it back at the front
             audioChunkQueueRef.current.unshift(chunk);
             console.warn('[OrchestratorAPI] ⚠️ Failed to send audio chunk, will retry');
+            audioChunkThrottleTimerRef.current = null;
         }
 
         // Schedule next chunk if queue is not empty

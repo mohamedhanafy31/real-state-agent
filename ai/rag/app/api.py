@@ -233,10 +233,25 @@ images_path.mkdir(parents=True, exist_ok=True)
 if images_path.exists():
     app.mount("/images", StaticFiles(directory=str(images_path)), name="images")
 
-# Add CORS middleware
+# Add CORS middleware - configure allowed origins from environment
+cors_origins_env = os.getenv("CORS_ORIGINS", "*")
+if cors_origins_env == "*":
+    cors_allow_origins = ["*"]
+else:
+    # Split comma-separated origins and strip whitespace
+    # Filter out wildcard patterns (FastAPI doesn't support them directly)
+    origins_list = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+    cors_allow_origins = [origin for origin in origins_list if "*" not in origin]
+    # If we have wildcard patterns, default to allow all
+    if any("*" in origin for origin in origins_list):
+        logger.warning("Wildcard patterns in CORS_ORIGINS not supported, allowing all origins")
+        cors_allow_origins = ["*"]
+
+logger.info(f"CORS configured with origins: {cors_allow_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=cors_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     log_format: str = os.getenv("LOG_FORMAT", "json")
     log_dir: str = os.getenv("LOG_DIR", "logs")
     
+    # CORS Configuration
+    cors_origins: str = os.getenv("CORS_ORIGINS", "*")  # Comma-separated list of allowed origins, or "*" for all
+    
     # Limits
     max_audio_buffer_size: int = int(os.getenv("MAX_AUDIO_BUFFER_SIZE", "10485760"))  # 10MB
     max_session_duration: int = int(os.getenv("MAX_SESSION_DURATION", "3600"))  # 1 hour

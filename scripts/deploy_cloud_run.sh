@@ -17,13 +17,22 @@ DEPLOY_ORCH=${DEPLOY_ORCH:-1}
 start_build() {
   local dir="$1"
   local image="$2"
+  local build_args="${3:-}"
 
   echo "==> Building & pushing image ${image} from ${dir}" >&2
   local build_id
-  build_id="$(
-    cd "${dir}" && \
-    gcloud builds submit --tag "${image}" . --async --format='value(name)'
-  )"
+  if [[ -n "${build_args}" ]]; then
+    echo "    With build args: ${build_args}" >&2
+    build_id="$(
+      cd "${dir}" && \
+      gcloud builds submit --tag "${image}" --substitutions="${build_args}" . --async --format='value(name)'
+    )"
+  else
+    build_id="$(
+      cd "${dir}" && \
+      gcloud builds submit --tag "${image}" . --async --format='value(name)'
+    )"
+  fi
   echo "    Build started with ID: ${build_id}" >&2
   printf '%s\n' "${build_id}"
 }
@@ -75,9 +84,7 @@ FRONTEND_BUILD_ID=""
 RAG_BUILD_ID=""
 ORCH_BUILD_ID=""
 
-if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
-  FRONTEND_BUILD_ID="$(start_build "Ai-P" "${FRONTEND_IMAGE}")"
-fi
+# Don't build frontend yet - we need orchestrator URL first for build args
 if [[ "${DEPLOY_RAG}" == "1" || "${DEPLOY_RAG}" == "true" ]]; then
   RAG_BUILD_ID="$(start_build "ai/rag" "${RAG_IMAGE}")"
 fi
@@ -85,9 +92,6 @@ if [[ "${DEPLOY_ORCH}" == "1" || "${DEPLOY_ORCH}" == "true" ]]; then
   ORCH_BUILD_ID="$(start_build "ai/orchestrator" "${ORCH_IMAGE}")"
 fi
 
-if [[ -n "${FRONTEND_BUILD_ID}" ]]; then
-  wait_for_build "${FRONTEND_BUILD_ID}"
-fi
 if [[ -n "${RAG_BUILD_ID}" ]]; then
   wait_for_build "${RAG_BUILD_ID}"
 fi
@@ -106,6 +110,8 @@ ORCH_URL="${ORCH_API_URL:-}"
 
 if [[ "${DEPLOY_RAG}" == "1" || "${DEPLOY_RAG}" == "true" ]]; then
   echo "==> Deploying RAG Cloud Run service"
+  # For now, allow all origins (will be updated after frontend is deployed if needed)
+  # Cloud Run services can be updated later with specific CORS origins
   RAG_URL=$(gcloud run deploy rag-api \
     --image "${RAG_IMAGE}" \
     --region "${REGION}" \
@@ -113,12 +119,15 @@ if [[ "${DEPLOY_RAG}" == "1" || "${DEPLOY_RAG}" == "true" ]]; then
     --allow-unauthenticated \
     --set-env-vars "GEMINI_API_KEY=${GEMINI_API_KEY}" \
     --set-env-vars "LOG_LEVEL=INFO" \
+    --set-env-vars "CORS_ORIGINS=*" \
     --format='value(status.url)')
   echo "✓ RAG deployed at ${RAG_URL}"
 fi
 
 if [[ "${DEPLOY_ORCH}" == "1" || "${DEPLOY_ORCH}" == "true" ]]; then
   echo "==> Deploying orchestrator Cloud Run service"
+  # For now, allow all origins (will be updated after frontend is deployed if needed)
+  # Cloud Run services can be updated later with specific CORS origins
   ORCH_URL=$(gcloud run deploy orchestrator \
     --image "${ORCH_IMAGE}" \
     --region "${REGION}" \
@@ -127,6 +136,7 @@ if [[ "${DEPLOY_ORCH}" == "1" || "${DEPLOY_ORCH}" == "true" ]]; then
     --set-env-vars "ASR_API_URL=${ASR_API_URL}" \
     --set-env-vars "TTS_API_URL=${TTS_API_URL}" \
     --set-env-vars "JWT_SECRET=${JWT_SECRET}" \
+    --set-env-vars "CORS_ORIGINS=*" \
     --format='value(status.url)')
   echo "✓ Orchestrator deployed at ${ORCH_URL}"
 fi
@@ -140,6 +150,26 @@ fi
 
 FRONTEND_URL="${FRONTEND_URL:-}"
 if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
+  # Build frontend with orchestrator URLs as build args
+  echo "==> Building frontend with orchestrator URLs"
+  if [[ -n "${ORCH_URL}" && -n "${ORCH_WS_URL}" ]]; then
+    # Use Cloud Build with cloudbuild.yaml to pass build args
+    FRONTEND_BUILD_ID="$(
+      cd "Ai-P" && \
+      gcloud builds submit \
+        --config=cloudbuild.yaml \
+        --substitutions=_NEXT_PUBLIC_ORCHESTRATOR_URL="${ORCH_URL}",_NEXT_PUBLIC_WS_URL="${ORCH_WS_URL}",_IMAGE_NAME="${FRONTEND_IMAGE}" \
+        --async \
+        --format='value(name)'
+    )"
+    echo "    Frontend build started with ID: ${FRONTEND_BUILD_ID}"
+    wait_for_build "${FRONTEND_BUILD_ID}"
+  else
+    echo "⚠️  Warning: Orchestrator URL not available, building frontend without build args"
+    FRONTEND_BUILD_ID="$(start_build "Ai-P" "${FRONTEND_IMAGE}")"
+    wait_for_build "${FRONTEND_BUILD_ID}"
+  fi
+  
   echo "==> Deploying frontend Cloud Run service"
   FRONTEND_URL=$(gcloud run deploy ai-p \
     --image "${FRONTEND_IMAGE}" \
@@ -149,6 +179,14 @@ if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
     --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}" \
     --format='value(status.url)')
   echo "✓ Frontend deployed at ${FRONTEND_URL}"
+  
+  # Update CORS origins for RAG and Orchestrator to include frontend URL
+  # Note: For Cloud Run, we allow all origins (*) since FastAPI doesn't support wildcard patterns
+  # In production, you may want to set specific origins for better security
+  if [[ -n "${FRONTEND_URL}" ]]; then
+    echo "==> CORS is configured to allow all origins (*) for Cloud Run compatibility"
+    echo "    To restrict CORS, set CORS_ORIGINS env var with comma-separated specific URLs"
+  fi
 fi
 
 cat > .env.cloudrun <<EOF
