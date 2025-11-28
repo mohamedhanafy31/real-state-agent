@@ -15,10 +15,14 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
     const isToggleMode = true;
 
     const isSpeaking = blob.state === 'speaking';
-    const canInteract = blob.state === 'silent' || blob.state === 'listening';
+    const isAudioPlaying = audio.isPlaying;
+    // Button should be enabled when:
+    // 1. Currently recording (to allow stopping)
+    // 2. State is silent and no audio is playing (to allow starting)
+    const canInteract = audio.isRecording || (blob.state === 'silent' && !isAudioPlaying);
 
     const handlePointerDown = () => {
-        if (!ui.micButtonEnabled || isToggleMode || isSpeaking || !canInteract) {
+        if (!ui.micButtonEnabled || isToggleMode || isSpeaking || isAudioPlaying || !canInteract) {
             return;
         }
         setIsPressed(true);
@@ -26,7 +30,7 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
     };
 
     const handlePointerUp = () => {
-        if (!ui.micButtonEnabled || isToggleMode || isSpeaking || !canInteract) {
+        if (!ui.micButtonEnabled || isToggleMode || isSpeaking || isAudioPlaying || !canInteract) {
             return;
         }
         setIsPressed(false);
@@ -34,23 +38,28 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
     };
 
     const handleClick = () => {
-        if (!ui.micButtonEnabled || !isToggleMode || isSpeaking || !canInteract) {
-            return;
-        }
-
+        // Allow stopping recording even if audio is playing or state is speaking
         if (audio.isRecording) {
             setIsPressed(false);
             onRelease();
-        } else {
-            setIsPressed(true);
-            onPress();
+            return;
         }
+        
+        // For starting recording, check all conditions
+        if (!ui.micButtonEnabled || !isToggleMode || isSpeaking || isAudioPlaying || !canInteract) {
+            return;
+        }
+
+        setIsPressed(true);
+        onPress();
     };
 
     const getButtonClass = () => {
         let className = styles.micButton;
         if ((isPressed || (isToggleMode && audio.isRecording)) && audio.isRecording) className += ` ${styles.recording}`;
-        if (!ui.micButtonEnabled || isSpeaking || !canInteract) className += ` ${styles.disabled}`;
+        // Disable button if not enabled, or if (speaking/playing/!canInteract) AND not recording
+        const shouldDisable = !ui.micButtonEnabled || ((isSpeaking || isAudioPlaying || !canInteract) && !audio.isRecording);
+        if (shouldDisable) className += ` ${styles.disabled}`;
         if (ui.errorMessage) className += ` ${styles.error}`;
         return className;
     };
@@ -74,7 +83,7 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
                     }
                 }}
                 onClick={handleClick}
-                disabled={!ui.micButtonEnabled || isSpeaking || !canInteract}
+                disabled={!ui.micButtonEnabled || ((isSpeaking || isAudioPlaying || !canInteract) && !audio.isRecording)}
                 aria-label={getLabel()}
                 role="button"
                 tabIndex={0}

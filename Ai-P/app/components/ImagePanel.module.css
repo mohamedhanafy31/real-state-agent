@@ -16,7 +16,7 @@
     z-index: var(--z-images);
     opacity: 0;
     transform: translateY(20px);
-    transition: opacity 300ms ease, transform 300ms ease;
+    transition: opacity 1500ms ease, transform 1500ms ease;
 }
 
 .panelVisible {
@@ -263,11 +263,12 @@
         padding: 14px 14px 20px;
         border-radius: 16px;
         max-width: 360px;
-        max-height: 420px;
-        overflow-y: auto;
+        max-height: none;
+        overflow-y: visible;
     }
 
     .unitList {
-        max-height: 320px;
+        max-height: 340px; /* show image + most of first description */
+        overflow-y: auto;
     }
 }

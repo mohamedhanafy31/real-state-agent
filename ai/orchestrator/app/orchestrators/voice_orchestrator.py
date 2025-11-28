@@ -322,8 +322,9 @@ class VoiceOrchestrator(BaseOrchestrator):
                 "stage": "tts_processing"
             })
             
+            tts_success = False
             try:
-                await self.send_tts_audio(
+                tts_success = await self.send_tts_audio(
                     websocket,
                     session_id,
                     full_text,
@@ -332,10 +333,12 @@ class VoiceOrchestrator(BaseOrchestrator):
                 )
             except Exception as e:
                 logger.error(f"TTS processing failed: {e}")
-                # Don't fail completely, just log the error
+                tts_success = False
             
             # Phase 5: Close session
-            await self._close_session(websocket, session_id, "completed")
+            # Use different reason if TTS completely failed
+            close_reason = "completed" if tts_success else "tts_error"
+            await self._close_session(websocket, session_id, close_reason)
             
         except Exception as e:
             logger.error(f"Voice session error: {e}", exc_info=True)

@@ -10,8 +10,9 @@
 }
 
 .container.withImages {
-    transform: none;
-    width: 75%;
+    width: 100%;
+    transform: scale(0.75);
+    transform-origin: center;
 }
 
 .canvas {
@@ -35,7 +36,8 @@
     }
 
     .container.withImages {
-        transform: scale(0.39);
+        transform: scale(0.75);
+        transform-origin: center;
         margin: var(--spacing-sm) 0;
     }
 }

@@ -35,6 +35,12 @@ export interface EndStreamMessage {
     type: 'end_stream';
     session_id: string;
     reason?: string;
+    /**
+     * Optional extra instruction/context sent with the final turn.
+     * Used, for example, to pass selected unit information from the UI
+     * so the orchestrator/RAG can better understand referential queries.
+     */
+    additional_messages?: string;
 }
 
 export interface TextMessage {
@@ -169,6 +175,7 @@ export interface AppState {
         gallery: GalleryUnit[];
         isStreaming: boolean;
         selectedUnitIds: string[];
+        selectionLocked: boolean;
     };
 
     ui: {

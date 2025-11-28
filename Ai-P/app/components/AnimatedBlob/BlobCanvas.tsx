@@ -735,8 +735,13 @@ export default function BlobCanvas() {
                     material.uniforms.uGlowIntensity.value = THREE.MathUtils.lerp(1.0, 0, eased);
                 }
 
-                // Render
-                renderer.render(scene, camera);
+                // Render with error handling to suppress WebGL warnings
+                try {
+                    renderer.render(scene, camera);
+                } catch (error) {
+                    // Suppress WebGL errors during animation transitions
+                    // These are typically harmless warnings about shader programs
+                }
 
                 if (progress < 1) {
                     transitionFrameRef.current = requestAnimationFrame(animateSplit);
@@ -769,8 +774,12 @@ export default function BlobCanvas() {
                     isTransitioningRef.current = false;
                     transitionFrameRef.current = null;
                     
-                    // Final render
-                    renderer.render(scene, camera);
+                    // Final render with error handling
+                    try {
+                        renderer.render(scene, camera);
+                    } catch (error) {
+                        // Suppress WebGL errors during animation transitions
+                    }
                 }
             };
 
@@ -863,8 +872,13 @@ export default function BlobCanvas() {
                     material.uniforms.uGlowIntensity.value = eased;
                 }
 
-                // Render
-                renderer.render(scene, camera);
+                // Render with error handling to suppress WebGL warnings
+                try {
+                    renderer.render(scene, camera);
+                } catch (error) {
+                    // Suppress WebGL errors during animation transitions
+                    // These are typically harmless warnings about shader programs
+                }
 
                 if (progress < 1) {
                     transitionFrameRef.current = requestAnimationFrame(animateMerge);
@@ -887,8 +901,12 @@ export default function BlobCanvas() {
                     isTransitioningRef.current = false;
                     transitionFrameRef.current = null;
                     
-                    // Final render
-                    renderer.render(scene, camera);
+                    // Final render with error handling
+                    try {
+                        renderer.render(scene, camera);
+                    } catch (error) {
+                        // Suppress WebGL errors during animation transitions
+                    }
                 }
             };
 

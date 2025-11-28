@@ -4,7 +4,7 @@ Utility functions for the orchestrator.
 import base64
 import io
 import re
-from typing import List
+from typing import List, Optional
 from pydub import AudioSegment  # type: ignore
 from app.logging_config import get_logger
 
@@ -248,19 +248,98 @@ def sanitize_rag_text(text: str) -> str:
     return cleaned.strip()
 
 
+ARABIC_DIGIT_TRANSLATION = str.maketrans({
+    "٠": "0",
+    "١": "1",
+    "٢": "2",
+    "٣": "3",
+    "٤": "4",
+    "٥": "5",
+    "٦": "6",
+    "٧": "7",
+    "٨": "8",
+    "٩": "9",
+    "٬": ",",
+    "،": ",",
+    "٫": ".",
+})
+
+NUMBER_WITH_CURRENCY_PATTERN = re.compile(
+    r"(?P<number>\d{1,3}(?:[,\s]\d{3})+|\d+)"
+    r"(?P<currency>\s*(?:ج\.?م|جنيه|ريال|درهم|EGP|SAR|AED)?)",
+    re.IGNORECASE,
+)
+
+
+def _format_large_number_for_tts(value: int, currency: Optional[str]) -> str:
+    """Convert large integers into TTS-friendly phrases."""
+    currency_word = ""
+    if currency:
+        currency = currency.strip().lower()
+        if currency in {"ج.م", "ج م", "جنيه", "egp"}:
+            currency_word = "جنيه"
+        elif currency in {"ريال", "sar"}:
+            currency_word = "ريال"
+        elif currency in {"درهم", "aed"}:
+            currency_word = "درهم"
+        else:
+            currency_word = currency
+    
+    if value >= 1_000_000:
+        millions = value / 1_000_000
+        human = f"{millions:.2f}".rstrip("0").rstrip(".")
+        return f"{human} مليون {currency_word}".strip()
+    if value >= 1000:
+        thousands = value / 1000
+        human = f"{thousands:.1f}".rstrip("0").rstrip(".")
+        return f"{human} ألف {currency_word}".strip()
+    
+    return f"{value} {currency_word}".strip()
+
+
+def _convert_numbers_for_tts(text: str) -> str:
+    """Replace long numeric strings with TTS-friendly phrases."""
+    def repl(match: re.Match) -> str:
+        raw_number = match.group("number")
+        currency = match.group("currency") or ""
+        
+        if not raw_number:
+            return match.group(0)
+        
+        clean_number = re.sub(r"[,\s]", "", raw_number)
+        if not clean_number.isdigit():
+            return match.group(0)
+        
+        value = int(clean_number)
+        if value < 1000:
+            return match.group(0)
+        
+        return _format_large_number_for_tts(value, currency)
+    
+    return NUMBER_WITH_CURRENCY_PATTERN.sub(repl, text)
+
+
 def normalize_tts_text(text: str) -> str:
     """
-    Prepare text for TTS by spacing out special symbols and removing artifacts
-    that can cause the TTS provider to truncate audio (e.g., consecutive slashes).
+    Prepare text for TTS by spacing out special symbols and normalizing large numbers
+    so the TTS provider doesn't spell out every digit.
     """
     if not text:
         return ""
     
     normalized = text
-    normalized = normalized.replace("/", " / ")
+    # Replace path-like separators with spaces so TTS doesn't try to read them literally
+    normalized = normalized.replace("/", " ")
     normalized = normalized.replace("\\", " ")
     normalized = normalized.replace("|", " ")
     normalized = normalized.replace(":", " : ")
+    
+    # Normalize Arabic-Indic digits and separators to ASCII equivalents
+    normalized = normalized.translate(ARABIC_DIGIT_TRANSLATION)
+    
+    # Convert large numeric phrases into TTS-friendly wording
+    normalized = _convert_numbers_for_tts(normalized)
+    
     normalized = re.sub(r"\s+", " ", normalized)
     return normalized.strip()
 

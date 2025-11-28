@@ -42,6 +42,7 @@ export default function ImagePanel() {
     const gallery = content.gallery;
     const hasGallery = ui.showImages && gallery.length > 0;
     const selectedUnitIds = content.selectedUnitIds;
+    const selectionLocked = content.selectionLocked;
     const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
     const displayUnits = useMemo(() => {
@@ -86,13 +87,15 @@ export default function ImagePanel() {
                         {gallery.length === 1 ? 'وحدة واحدة' : `${gallery.length} وحدات`}
                     </p>
                 </div>
-                <span className={styles.badge}>مباشر من قاعدة البيانات</span>
             </header>
 
             <section className={styles.unitList}>
                 {displayUnits.map((unit) => {
                     const isSelected = selectedUnitIds.includes(unit.id);
-                    const toggleSelection = () => toggleUnitSelection(unit.id);
+                    const toggleSelection = () => {
+                        if (selectionLocked) return;
+                        toggleUnitSelection(unit.id);
+                    };
                     return (
                         <article
                             key={unit.id}

@@ -632,18 +632,54 @@ async def query_stream(request: QueryRequest, http_request: Request):
             
             csv_path = str(csv_path) if isinstance(csv_path, Path) else csv_path
             
+            selector = UnitSelector(
+                csv_path=csv_path,
+                api_key=os.getenv('GEMINI_API_KEY'),
+                model_name=get_config_value(config, 'generator.model_name', 'gemini-2.0-flash')
+            )
+            
+            # Get last selected units from memory for pronoun resolution
+            from src.selector.selector_memory import get_selector_memory
+            selector_memory = get_selector_memory()
+            last_units = selector_memory.get_last_units(session_id)
+            
             with ThreadPoolExecutor(max_workers=2) as executor:
                 retrieval_future = executor.submit(retriever.retrieve, request.question, request.retrieval_k)
                 selector_future = executor.submit(
-                    lambda: UnitSelector(
-                        csv_path=csv_path,
-                        api_key=os.getenv('GEMINI_API_KEY'),
-                        model_name=get_config_value(config, 'generator.model_name', 'gemini-2.0-flash')
-                    ).select_units(request.question)
+                    selector.select_units,
+                    request.question,
+                    conversation_history if conversation_history else None,
+                    last_units if last_units else None
                 )
                 
                 results = retrieval_future.result()
                 selector_result = selector_future.result()
+            
+            # Log selector result details
+            if selector_result:
+                selector_source = selector_result.source or "UNKNOWN"
+                relevance_score = selector_result.relevance_score
+                num_units = len(selector_result.rows) if selector_result.rows else 0
+                logger.info(
+                    "Selector result - Type: %s, Units: %d, Relevance: %s, Success: %s",
+                    selector_source,
+                    num_units,
+                    f"{relevance_score:.2f}" if relevance_score is not None else "N/A",
+                    selector_result.success
+                )
+                if selector_result.error:
+                    logger.warning("Selector error: %s", selector_result.error)
+            
+            # Save successful selection to memory for next query
+            if selector_result and selector_result.success and selector_result.rows:
+                selection_reason = None
+                if selector_result.filters_applied:
+                    selection_reason = "; ".join(selector_result.filters_applied)
+                selector_memory.save_selection(
+                    session_id=session_id,
+                    units=selector_result.rows,
+                    selection_reason=selection_reason
+                )
             
             if not results:
                 yield f"data: {json.dumps({'type': 'error', 'message': 'No context found'})}\n\n"
@@ -683,24 +719,68 @@ async def query_stream(request: QueryRequest, http_request: Request):
             if selector_result:
                 metadata['unit_selector'] = {
                     'code': selector_result.code,
-                    'error': selector_result.error
+                    'error': selector_result.error,
+                    'source': selector_result.source,
+                    'filters_applied': selector_result.filters_applied,
+                    'sort_applied': selector_result.sort_applied,
                 }
                 if selector_result.relevance_score is not None:
                     metadata['unit_selector_relevance_score'] = selector_result.relevance_score
             
             yield f"data: {json.dumps(metadata)}\n\n"
             
-            # Stream the response
+            # Stream the response with latency monitoring
+            import time
+            generator_start_time = time.time()
             full_text = ""
-            for chunk in generator.generate_stream(
-                prompt=request.question,
-                context=context_texts,
-                structured_data=structured_units,
-                conversation_history=conversation_history if conversation_history else None,
-                temperature=request.temperature
-            ):
-                full_text += chunk
-                yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
+            chunk_count = 0
+            first_chunk_time = None
+            
+            try:
+                for chunk in generator.generate_stream(
+                    prompt=request.question,
+                    context=context_texts,
+                    structured_data=structured_units,
+                    conversation_history=conversation_history if conversation_history else None,
+                    temperature=request.temperature
+                ):
+                    if first_chunk_time is None:
+                        first_chunk_time = time.time()
+                        time_to_first_chunk = first_chunk_time - generator_start_time
+                        logger.info(
+                            "Generator API - Time to first chunk: %.2fs (query: %s)",
+                            time_to_first_chunk,
+                            request.question[:50] + "..." if len(request.question) > 50 else request.question
+                        )
+                    full_text += chunk
+                    chunk_count += 1
+                    yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
+                
+                generator_end_time = time.time()
+                total_generator_time = generator_end_time - generator_start_time
+                logger.info(
+                    "Generator API - Total time: %.2fs, Chunks: %d, Avg chunk time: %.2fs (query: %s)",
+                    total_generator_time,
+                    chunk_count,
+                    total_generator_time / chunk_count if chunk_count > 0 else 0,
+                    request.question[:50] + "..." if len(request.question) > 50 else request.question
+                )
+                
+                # Log warning if generator is slow
+                if total_generator_time > 15.0:
+                    logger.warning(
+                        "Generator API latency warning - Response took %.2fs (threshold: 15s). This may indicate API issues.",
+                        total_generator_time
+                    )
+            except Exception as gen_error:
+                generator_end_time = time.time()
+                total_generator_time = generator_end_time - generator_start_time
+                logger.error(
+                    "Generator API error after %.2fs: %s",
+                    total_generator_time,
+                    str(gen_error)
+                )
+                raise
             
             # Add assistant response to history
             memory.add_message(session_id, 'assistant', full_text)
@@ -804,18 +884,54 @@ async def query(request: QueryRequest, http_request: Request):
         
         csv_path = str(csv_path) if isinstance(csv_path, Path) else csv_path
         
+        selector = UnitSelector(
+            csv_path=csv_path,
+            api_key=os.getenv('GEMINI_API_KEY'),
+            model_name=get_config_value(config, 'generator.model_name', 'gemini-2.0-flash')
+        )
+        
+        # Get last selected units from memory for pronoun resolution
+        from src.selector.selector_memory import get_selector_memory
+        selector_memory = get_selector_memory()
+        last_units = selector_memory.get_last_units(session_id)
+        
         with ThreadPoolExecutor(max_workers=2) as executor:
             retrieval_future = executor.submit(retriever.retrieve, request.question, request.retrieval_k)
             selector_future = executor.submit(
-                lambda: UnitSelector(
-                    csv_path=csv_path,
-                    api_key=os.getenv('GEMINI_API_KEY'),
-                    model_name=get_config_value(config, 'generator.model_name', 'gemini-2.0-flash')
-                ).select_units(request.question)
+                selector.select_units,
+                request.question,
+                conversation_history if conversation_history else None,
+                last_units if last_units else None
             )
             
             results = retrieval_future.result()
             selector_result = selector_future.result()
+        
+        # Log selector result details
+        if selector_result:
+            selector_source = selector_result.source or "UNKNOWN"
+            relevance_score = selector_result.relevance_score
+            num_units = len(selector_result.rows) if selector_result.rows else 0
+            logger.info(
+                "Selector result - Type: %s, Units: %d, Relevance: %s, Success: %s",
+                selector_source,
+                num_units,
+                f"{relevance_score:.2f}" if relevance_score is not None else "N/A",
+                selector_result.success
+            )
+            if selector_result.error:
+                logger.warning("Selector error: %s", selector_result.error)
+        
+        # Save successful selection to memory for next query
+        if selector_result and selector_result.success and selector_result.rows:
+            selection_reason = None
+            if selector_result.filters_applied:
+                selection_reason = "; ".join(selector_result.filters_applied)
+            selector_memory.save_selection(
+                session_id=session_id,
+                units=selector_result.rows,
+                selection_reason=selection_reason
+            )
         
         if not results:
             raise HTTPException(status_code=404, detail="No context found")
@@ -848,13 +964,40 @@ async def query(request: QueryRequest, http_request: Request):
             model_name=get_config_value(config, 'generator.model_name', 'gemini-2.0-flash')
         )
         
-        answer_text = generator.generate(
-            prompt=request.question,
-            context=context_texts,
-            structured_data=structured_units,
-            conversation_history=conversation_history if conversation_history else None,
-            temperature=request.temperature
-        )
+        # Monitor generator API latency
+        import time
+        generator_start_time = time.time()
+        try:
+            answer_text = generator.generate(
+                prompt=request.question,
+                context=context_texts,
+                structured_data=structured_units,
+                conversation_history=conversation_history if conversation_history else None,
+                temperature=request.temperature
+            )
+            generator_end_time = time.time()
+            total_generator_time = generator_end_time - generator_start_time
+            logger.info(
+                "Generator API - Total time: %.2fs (query: %s)",
+                total_generator_time,
+                request.question[:50] + "..." if len(request.question) > 50 else request.question
+            )
+            
+            # Log warning if generator is slow
+            if total_generator_time > 15.0:
+                logger.warning(
+                    "Generator API latency warning - Response took %.2fs (threshold: 15s). This may indicate API issues.",
+                    total_generator_time
+                )
+        except Exception as gen_error:
+            generator_end_time = time.time()
+            total_generator_time = generator_end_time - generator_start_time
+            logger.error(
+                "Generator API error after %.2fs: %s",
+                total_generator_time,
+                str(gen_error)
+            )
+            raise
         
         # Add assistant response to history
         memory.add_message(session_id, 'assistant', answer_text)
@@ -908,7 +1051,10 @@ async def query(request: QueryRequest, http_request: Request):
             if selector_result:
                 response_data["unit_selector"] = {
                     "code": selector_result.code,
-                    "error": selector_result.error
+                    "error": selector_result.error,
+                    "source": selector_result.source,
+                    "filters_applied": selector_result.filters_applied,
+                    "sort_applied": selector_result.sort_applied,
                 }
                 if selector_result.relevance_score is not None:
                     response_data["unit_selector_relevance_score"] = selector_result.relevance_score
@@ -1128,9 +1274,14 @@ async def clear_chat_history(session_id: Optional[str] = None):
         memory = get_memory()
         memory.clear_session(session_id)
         
+        # Also clear selector memory
+        from src.selector.selector_memory import get_selector_memory
+        selector_memory = get_selector_memory()
+        selector_memory.clear_session(session_id)
+        
         return {
             "status": "success",
-            "message": f"Chat history cleared for session: {session_id}",
+            "message": f"Chat history and selector memory cleared for session: {session_id}",
             "session_id": session_id
         }
     except Exception as e:
@@ -1173,6 +1324,10 @@ class SelectorTestRequest(BaseModel):
     """Request model for selector test endpoint."""
     question: str = Field(..., description="User question in Arabic or English")
     max_rows: int = Field(10, ge=1, le=50, description="Maximum number of units to return")
+    conversation_history: Optional[str] = Field(
+        None,
+        description="Optional conversation history text to provide context for the selector"
+    )
 
 
 class SelectorTestResponse(BaseModel):
@@ -1229,7 +1384,10 @@ async def test_selector(request: SelectorTestRequest):
         )
         
         # Run selector
-        result = selector.select_units(request.question)
+        result = selector.select_units(
+            request.question,
+            conversation_history=request.conversation_history
+        )
         
         if result.success:
             return SelectorTestResponse(

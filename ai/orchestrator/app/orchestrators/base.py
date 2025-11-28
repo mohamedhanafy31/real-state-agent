@@ -195,7 +195,7 @@ class BaseOrchestrator(ABC):
         text: str,
         language: str = "ar",
         sentences: Optional[List[str]] = None,
-    ):
+    ) -> bool:
         """
         Synthesize text to speech and send audio chunks to client.
         
@@ -205,6 +205,9 @@ class BaseOrchestrator(ABC):
             text: Text to synthesize
             language: Language code
             sentences: Optional pre-split sentences
+            
+        Returns:
+            True if at least one audio chunk was successfully sent, False otherwise
         """
         if sentences is None:
             sentences = split_into_sentences(text, language=language)
@@ -212,6 +215,8 @@ class BaseOrchestrator(ABC):
         
         tts_queue: Deque[Dict[str, Any]] = deque()
         preferred_voice = DEFAULT_TTS_VOICE
+        successful_chunks = 0
+        failed_chunks = 0
         
         try:
             for i, sentence in enumerate(sentences):
@@ -248,15 +253,32 @@ class BaseOrchestrator(ABC):
                     )
                     
                     await self._drain_tts_queue(websocket, session_id, tts_queue, preferred_voice)
+                    successful_chunks += 1
                     logger.debug(f"Queued TTS audio chunk {i+1}/{len(sentences)}")
                 
                 except Exception as e:
-                    logger.error(f"Error synthesizing sentence {i+1}: {e}")
+                    failed_chunks += 1
+                    logger.error(f"Error synthesizing sentence {i+1}/{len(sentences)}: {e}")
                     await self.send_error(websocket, 500, f"TTS synthesis failed: {str(e)}")
                     continue
+            
+            # Log summary
+            if successful_chunks == 0 and failed_chunks > 0:
+                logger.warning(
+                    "Session %s TTS completely failed: %d sentences failed, 0 succeeded",
+                    session_id, failed_chunks
+                )
+            elif failed_chunks > 0:
+                logger.warning(
+                    "Session %s TTS partial failure: %d succeeded, %d failed",
+                    session_id, successful_chunks, failed_chunks
+                )
+            
+            return successful_chunks > 0
+            
         except ClientDisconnectedError:
             logger.info("Client disconnected during TTS streaming for session %s", session_id)
-            return
+            return successful_chunks > 0
 
     async def _drain_tts_queue(
         self,

@@ -25,6 +25,10 @@ class UnitSelectorResult:
     error: Optional[str] = None
     raw_response: Optional[str] = None
     relevance_score: Optional[float] = None  # Score 0.0-1.0 indicating how well query matches CSV data
+    # New metadata fields to help downstream components (generator, logging, evaluation)
+    source: Optional[str] = None  # e.g. "EXPLICIT_MATCH", "HISTORY_MATCH", "LLM_CODE"
+    filters_applied: Optional[List[str]] = None  # Human-readable filters description
+    sort_applied: Optional[Dict[str, Any]] = None  # e.g. {"by": "Price", "direction": "asc", "limit": 3}
 
     @property
     def success(self) -> bool:
@@ -115,7 +119,12 @@ class UnitSelector:
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel(model_name)
 
-    def select_units(self, question: str) -> UnitSelectorResult:
+    def select_units(
+        self,
+        question: str,
+        conversation_history: Optional[str] = None,
+        last_units: Optional[List[Dict[str, Any]]] = None
+    ) -> UnitSelectorResult:
         """
         Generate pandas filtering code for the user question and execute it.
         """
@@ -123,15 +132,126 @@ class UnitSelector:
         cleaned_code = ""
 
         try:
+            # Parse additional message if present (format: "مهتم بالوحدات :\n<unit_list>")
+            additional_units = None
+            clean_question = question
+            if "مهتم بالوحدات" in question or "interested in units" in question.lower():
+                parts = question.split("مهتم بالوحدات")
+                if len(parts) > 1:
+                    clean_question = parts[0].strip()
+                    unit_list_part = parts[1].split(":", 1)
+                    if len(unit_list_part) > 1:
+                        unit_list_str = unit_list_part[1].strip()
+                        # Extract unit IDs/titles (comma-separated or newline-separated)
+                        additional_units = [u.strip() for u in unit_list_str.replace("\n", ",").split(",") if u.strip()]
+                        logger.info(
+                            "Unit selector - Extracted %d units from additional message: %s",
+                            len(additional_units),
+                            additional_units[:3]  # Log first 3
+                        )
+            
             # Extract requested number from question (e.g., "top 3", "first 5", "أول 3")
-            requested_count = self._extract_requested_count(question)
+            requested_count = self._extract_requested_count(clean_question)
             # Use the smaller of requested count or max_rows
             effective_max_rows = min(requested_count, self.max_rows) if requested_count else self.max_rows
 
-            explicit_rows = self._match_explicit_units(question, effective_max_rows)
+            search_text = f"{conversation_history}\n{clean_question}" if conversation_history else clean_question
+            
+            # PRIORITY 0: If additional_units are provided, try to match them explicitly
+            if additional_units:
+                # Format additional units for matching (add "كود" prefix if it's just a number)
+                formatted_units = []
+                for unit in additional_units:
+                    # If it's just a number, format it as "كود 203" to match the pattern
+                    if unit.isdigit():
+                        formatted_units.append(f"كود {unit}")
+                    else:
+                        formatted_units.append(unit)
+                
+                explicit_matches = self._match_explicit_units("\n".join(formatted_units), effective_max_rows)
+                if explicit_matches:
+                    logger.info(
+                        "Unit selector EXPLICIT_MATCH - Matched %d units from additional message (relevance: 1.00)",
+                        len(explicit_matches)
+                    )
+                    return UnitSelectorResult(
+                        code="# Explicit match from additional message",
+                        rows=explicit_matches,
+                        raw_response="EXPLICIT_MATCH_FROM_ADDITIONAL",
+                        relevance_score=1.0,
+                        source="EXPLICIT_MATCH",
+                        filters_applied=[
+                            f"Matched units from additional message: {', '.join(additional_units[:3])}"
+                        ],
+                    )
+                else:
+                    logger.warning(
+                        "Unit selector - Could not match units from additional message: %s",
+                        additional_units
+                    )
+
+            # PRIORITY 1: If question refers to previous units and we have last_units, use them first
+            if last_units and self._refers_to_history(clean_question):
+                # Try to filter within last_units based on the question
+                filtered_from_last = self._filter_within_last_units(
+                    clean_question, last_units, effective_max_rows
+                )
+                if filtered_from_last:
+                    logger.info(
+                        "Unit selector LAST_UNITS_MATCH - Resolved pronoun reference using last_units (%d rows from %d, relevance: 0.95)",
+                        len(filtered_from_last),
+                        len(last_units),
+                    )
+                    return UnitSelectorResult(
+                        code="# Last units pronoun match",
+                        rows=filtered_from_last,
+                        raw_response="LAST_UNITS_MATCH",
+                        relevance_score=0.95,
+                        source="LAST_UNITS_MATCH",
+                        filters_applied=[
+                            f"Filtered within {len(last_units)} previously selected units based on pronoun/reference"
+                        ],
+                    )
+                # If no filter applied but we have last_units and query is referential, return all last_units
+                if len(last_units) <= effective_max_rows:
+                    logger.info(
+                        "Unit selector LAST_UNITS_MATCH - Returning all last_units for pronoun reference (%d rows, relevance: 0.95)",
+                        len(last_units),
+                    )
+                    return UnitSelectorResult(
+                        code="# Last units pronoun match (all)",
+                        rows=last_units[:effective_max_rows],
+                        raw_response="LAST_UNITS_MATCH_ALL",
+                        relevance_score=0.95,
+                        source="LAST_UNITS_MATCH",
+                        filters_applied=[
+                            f"Returned all {len(last_units)} previously selected units (pronoun reference)"
+                        ],
+                    )
+
+            # PRIORITY 2: If question refers back to previous turns, try to resolve using history only.
+            if conversation_history and self._refers_to_history(clean_question):
+                history_rows = self._match_explicit_units(conversation_history, effective_max_rows)
+                if history_rows:
+                    logger.info(
+                        "Unit selector HISTORY_MATCH - Resolved reference to previous turn (%d rows, relevance: 0.95)",
+                        len(history_rows),
+                    )
+                    return UnitSelectorResult(
+                        code="# History reference match",
+                        rows=history_rows,
+                        raw_response="HISTORY_MATCH",
+                        relevance_score=0.95,
+                        source="HISTORY_MATCH",
+                        filters_applied=[
+                            "Reused explicit unit codes/numbers from conversation history"
+                        ],
+                    )
+
+            explicit_rows = self._match_explicit_units(search_text, effective_max_rows)
             if explicit_rows is not None:
                 logger.info(
-                    "Unit selector returning %d explicit matches (bypassing LLM)",
+                    "Unit selector EXPLICIT_MATCH - Returning %d explicit matches (bypassing LLM, relevance: 1.00)",
                     len(explicit_rows),
                 )
                 return UnitSelectorResult(
@@ -139,15 +259,29 @@ class UnitSelector:
                     rows=explicit_rows,
                     raw_response="EXPLICIT_MATCH",
                     relevance_score=1.0,
+                    source="EXPLICIT_MATCH",
+                    filters_applied=[
+                        "Matched explicit unit codes/IDs and/or numeric codes in question/history"
+                    ],
                 )
             
-            raw_response = self._generate_code(question)
+            raw_response = self._generate_code(clean_question, conversation_history=conversation_history)
             cleaned_code = self._extract_code(raw_response)
             if not cleaned_code:
                 raise ValueError("LLM response did not contain executable code block.")
 
             # Extract relevance score from response
             relevance_score = self._extract_relevance_score(raw_response)
+            
+            # Log relevance score for assessment
+            if relevance_score is not None:
+                logger.info(
+                    "Unit selector LLM_CODE - Relevance score: %.2f (query: %s)",
+                    relevance_score,
+                    clean_question[:50] + "..." if len(clean_question) > 50 else clean_question
+                )
+            else:
+                logger.warning("Unit selector LLM_CODE - No relevance score extracted from LLM response")
 
             rows = self._execute_code(cleaned_code, effective_max_rows)
             
@@ -157,11 +291,19 @@ class UnitSelector:
                 logger.info(f"Low relevance score ({relevance_score:.2f}) detected. Forcing empty results.")
                 rows = []
             
+            # Log selector result summary
+            logger.info(
+                "Unit selector LLM_CODE - Selected %d units (relevance: %s, source: LLM_CODE)",
+                len(rows),
+                f"{relevance_score:.2f}" if relevance_score is not None else "N/A"
+            )
+            
             return UnitSelectorResult(
                 code=cleaned_code,
                 rows=rows,
                 raw_response=raw_response,
                 relevance_score=relevance_score,
+                source="LLM_CODE",
             )
         except Exception as exc:  # pragma: no cover - defensive, runtime logging
             logger.warning("Unit selection failed: %s", exc)
@@ -182,7 +324,7 @@ class UnitSelector:
                 relevance_score=relevance_score,
             )
 
-    def _generate_code(self, question: str) -> str:
+    def _generate_code(self, question: str, conversation_history: Optional[str] = None) -> str:
         """Ask Gemini to produce pandas code for the given question."""
         # Read CSV to get column names and sample data
         try:
@@ -214,8 +356,25 @@ class UnitSelector:
                 for col, vals in sample_values.items():
                     column_info += f"  - {col}: {vals}\n"
         
+        history_block = ""
+        if conversation_history:
+            history_block = (
+                "Conversation history (latest first):\n"
+                f"{conversation_history.strip()}\n\n"
+                "Use this history to resolve pronouns or references such as "
+                "\"الوحدة اللي كنا بنتكلم عنها\".\n\n"
+            )
+
         instruction = (
             "You are an assistant that writes secure pandas code to filter real-estate units.\n\n"
+            "QUERY AUTOCORRECT - IMPORTANT:\n"
+            "Before processing the query, automatically correct common spelling mistakes and typos:\n"
+            "- Arabic common mistakes: 'شهور' → 'شقق' (months → apartments), 'عجلات' → 'شقق' (wheels → apartments), 'موديلات' → 'شقق' (models → apartments), 'موبايلات' → 'شقق' (phones → apartments)\n"
+            "- Fix incomplete words: 'ثلاثه' → 'ثلاثة', 'ثلاث' → 'ثلاثة', 'ارخص' → 'أرخص'\n"
+            "- Normalize variations: 'فيلا' = 'فيله' = 'فيله', 'شقة' = 'شقه' = 'شقق'\n"
+            "- Fix common typos: 'السادات' → 'السداد' (payment plan), 'الهبله' → 'الفيلا' (villa)\n"
+            "- Remove extra spaces and normalize punctuation\n"
+            "Apply these corrections automatically when interpreting the query.\n\n"
             "CRITICAL REQUIREMENTS:\n"
             "1. The CSV file is ALREADY LOADED in variable 'df'. DO NOT call pd.read_csv() again.\n"
             "2. The CSV_PATH variable is available but you should use 'df' directly (it's already loaded).\n"
@@ -271,7 +430,11 @@ class UnitSelector:
             "8. When filtering by Description text, use flexible patterns: df['Description'].str.contains('pattern1|pattern2|pattern3', case=False, na=False)\n"
         )
 
-        prompt = f"{instruction}\n\nUser question:\n{question}"
+        question_block = question
+        if conversation_history:
+            question_block = f"{history_block}Current user question:\n{question}"
+
+        prompt = f"{instruction}\n\nUser question:\n{question_block}"
         response = self.model.generate_content(prompt)
         return response.text or ""
 
@@ -465,13 +628,15 @@ class UnitSelector:
         return result_df.to_dict(orient="records")
 
     def _match_explicit_units(
-        self, question: str, max_rows: Optional[int]
+        self,
+        text_source: Optional[str],
+        max_rows: Optional[int]
     ) -> Optional[List[Dict[str, Any]]]:
         """Return direct matches when question references specific unit codes/IDs."""
-        if not question or self._df_cache.empty:
+        if not text_source or self._df_cache.empty:
             return None
 
-        compact = re.sub(r"\s+", "", question.lower())
+        compact = re.sub(r"\s+", "", text_source.lower())
         code_pattern = re.compile(r"([a-z0-9]+/[a-z0-9]+/[a-z0-9]+/[a-z0-9]+)", re.IGNORECASE)
         explicit_codes = {match.group(1) for match in code_pattern.finditer(compact)}
 
@@ -479,9 +644,21 @@ class UnitSelector:
             r"(?:كود|code|id|رقم)\s*(?:وحدة|شقة|الشقة|الشقه|#|بتاعها|هو|هي|:)?\s*(\d{2,})",
             re.IGNORECASE,
         )
+        # Extract numeric IDs from the provided text source (question and/or history)
         explicit_numbers = {
-            match.group(1).lstrip("0") or match.group(1) for match in number_pattern.finditer(question)
+            match.group(1).lstrip("0") or match.group(1)
+            for match in number_pattern.finditer(text_source)
         }
+        
+        # Also extract standalone numbers (2+ digits) that might be unit IDs
+        # This helps when additional message contains just numbers like "203"
+        standalone_number_pattern = re.compile(r"\b(\d{2,})\b")
+        standalone_numbers = {
+            match.group(1).lstrip("0") or match.group(1)
+            for match in standalone_number_pattern.finditer(text_source)
+        }
+        # Merge both sets
+        explicit_numbers = explicit_numbers.union(standalone_numbers)
 
         if not explicit_codes and not explicit_numbers:
             return None
@@ -505,5 +682,157 @@ class UnitSelector:
         if matches.empty:
             return None
         return matches.replace({np.nan: None}).to_dict(orient="records")
+
+    def _filter_within_last_units(
+        self,
+        question: str,
+        last_units: List[Dict[str, Any]],
+        max_rows: Optional[int]
+    ) -> Optional[List[Dict[str, Any]]]:
+        """
+        Filter within last_units based on the question.
+        Handles cases like "one of them on the second floor" or "the cheapest one of those".
+        
+        Args:
+            question: User question
+            last_units: List of previously selected units
+            max_rows: Maximum number of rows to return
+            
+        Returns:
+            Filtered list of units, or None if no filter applies
+        """
+        if not last_units:
+            return None
+        
+        # Convert to DataFrame for easier filtering
+        df_last = pd.DataFrame(last_units)
+        if df_last.empty:
+            return None
+        
+        # Simple heuristics for common filters within last_units
+        lowered = question.lower()
+        filtered_df = df_last.copy()
+        filter_applied = False
+        
+        # Check for floor filters
+        if "دور" in lowered or "floor" in lowered:
+            if "تاني" in lowered or "2nd" in lowered or "ثاني" in lowered:
+                if "Floor" in df_last.columns:
+                    filtered_df = filtered_df[filtered_df["Floor"].astype(str).str.contains("2nd|ثاني|تاني", case=False, na=False)]
+                    filter_applied = True
+            elif "أول" in lowered or "1st" in lowered:
+                if "Floor" in df_last.columns:
+                    filtered_df = filtered_df[filtered_df["Floor"].astype(str).str.contains("1st|أول", case=False, na=False)]
+                    filter_applied = True
+            elif "ثالث" in lowered or "3rd" in lowered or "تالت" in lowered:
+                if "Floor" in df_last.columns:
+                    filtered_df = filtered_df[filtered_df["Floor"].astype(str).str.contains("3rd|ثالث|تالت", case=False, na=False)]
+                    filter_applied = True
+            elif "أرضي" in lowered or "ground" in lowered or "gr" in lowered:
+                if "Floor" in df_last.columns:
+                    filtered_df = filtered_df[filtered_df["Floor"].astype(str).str.contains("Gr|ground|أرضي", case=False, na=False)]
+                    filter_applied = True
+        
+        # Check for price filters (cheapest/most expensive within last_units)
+        if "أرخص" in lowered or "cheapest" in lowered or "أقل" in lowered:
+            if "Price" in filtered_df.columns:
+                try:
+                    prices = pd.to_numeric(filtered_df["Price"], errors='coerce')
+                    min_price = prices.min()
+                    filtered_df = filtered_df[prices == min_price]
+                    filter_applied = True
+                except:
+                    pass
+        elif "أغلى" in lowered or "expensive" in lowered or "أعلى" in lowered:
+            if "Price" in filtered_df.columns:
+                try:
+                    prices = pd.to_numeric(filtered_df["Price"], errors='coerce')
+                    max_price = prices.max()
+                    filtered_df = filtered_df[prices == max_price]
+                    filter_applied = True
+                except:
+                    pass
+        
+        # Check for specific count requests (e.g., "one of them", "three of them")
+        requested_count = self._extract_requested_count(question)
+        if requested_count and requested_count < len(filtered_df):
+            # If asking for specific count, sort by price (ascending) and take top N
+            if "Price" in filtered_df.columns:
+                try:
+                    prices = pd.to_numeric(filtered_df["Price"], errors='coerce')
+                    filtered_df = filtered_df.loc[prices.sort_values().head(requested_count).index]
+                    filter_applied = True
+                except:
+                    filtered_df = filtered_df.head(requested_count)
+                    filter_applied = True
+            else:
+                filtered_df = filtered_df.head(requested_count)
+                filter_applied = True
+        
+        # If no filter was applied (filtered_df same as original), return None
+        if not filter_applied or len(filtered_df) == len(df_last):
+            return None
+        
+        # If filter resulted in empty, return None
+        if filtered_df.empty:
+            return None
+        
+        limit = max_rows if max_rows is not None else self.max_rows
+        result = filtered_df.head(limit).replace({np.nan: None}).to_dict(orient="records")
+        return result if result else None
+
+    def _refers_to_history(self, question: str) -> bool:
+        """Heuristic to detect pronoun-based references to previous turns."""
+        if not question:
+            return False
+        lowered = question.lower()
+        reference_phrases = [
+            "الشقة اللي قولتلك",
+            "الوحدة اللي قولتلك",
+            "اللي قولتلك عليها",
+            "اللي قولتلك عليه",
+            "الكود بتاعها",
+            "الكود بتاعه",
+            "نفس الشقة",
+            "نفس الوحدة",
+            "دي اللي قولتلك عليها",
+            "دي اللي قلتلك عليها",
+            "نفسها",
+            "زي ما قلت",
+            "دول",
+            "دي",
+            "اللي فاتوا",
+            "اللي قولت",
+            "اللي قلت",
+            "منهم",
+            "واحدة منهم",
+            "شقة منهم",
+            "الفيلا دي",
+            "الفيلا ديت",
+            "الشقة دي",
+            "الشقة ديت",
+            "الوحدة دي",
+            "الوحدة ديت",
+            "الهبله دي",
+            "الهبله ديت",
+            "الوحده دي",
+            "الوحده ديت",
+        ]
+        pronoun_hits = any(phrase in lowered for phrase in reference_phrases)
+
+        # Check for payment/installment queries that likely refer to previously mentioned units
+        payment_keywords = ["سداد", "دفع", "قسط", "payment", "installment", "السداد", "الدفع", "القسط"]
+        has_payment_keyword = any(keyword in lowered for keyword in payment_keywords)
+        
+        # If query has payment keywords and references "this/that" unit, it's likely a follow-up
+        if has_payment_keyword and any(word in lowered for word in ["دي", "ديت", "ديها", "this", "that", "the"]):
+            pronoun_hits = True
+            logger.debug("Detected payment/installment query referring to previous unit: %s", question[:50])
+
+        # Also treat very short questions with no numbers as likely references.
+        if not pronoun_hits and len(question.strip()) < 25 and not re.search(r"\d", question):
+            pronoun_hits = True
+
+        return pronoun_hits
 
 

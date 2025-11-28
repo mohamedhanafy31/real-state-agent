@@ -259,9 +259,15 @@ export default function SlideBar() {
     }, []);
 
     return (
-        <div className={styles.slideBar}>
-            {/* Left edge fade */}
-            <div className={styles.edgeFadeLeft}></div>
+        <div className={styles.slideBarContainer}>
+            {/* Branding */}
+            <div className={styles.branding}>
+                <span className={styles.brandingText}>AI-P</span>
+            </div>
+            
+            <div className={styles.slideBar}>
+                {/* Left edge fade */}
+                <div className={styles.edgeFadeLeft}></div>
             
             <div className={styles.imageCarousel} ref={scrollContainerRef}>
         {PLACEHOLDER_IMAGES.map((item) => (
@@ -347,6 +353,7 @@ export default function SlideBar() {
                     <div className={styles.scrollArrow}>→</div>
                 </div>
             )}
+            </div>
         </div>
     );
 }

@@ -31,6 +31,7 @@ interface AppStore extends AppState {
     setIsStreaming: (streaming: boolean) => void;
     toggleUnitSelection: (unitId: string) => void;
     clearSelectedUnits: () => void;
+    keepOnlySelectedUnitsAndLock: () => void;
 
     // UI actions
     setMicButtonEnabled: (enabled: boolean) => void;
@@ -72,6 +73,7 @@ export const useAppStore = create<AppStore>((set) => ({
         response: '',
         gallery: [],
         selectedUnitIds: [],
+        selectionLocked: false,
         isStreaming: false,
     },
 
@@ -178,7 +180,7 @@ export const useAppStore = create<AppStore>((set) => ({
 
     setGalleryItems: (items) =>
         set((state) => ({
-            content: { ...state.content, gallery: items, selectedUnitIds: [] },
+            content: { ...state.content, gallery: items, selectedUnitIds: [], selectionLocked: false },
             ui: { ...state.ui, showImages: items.length > 0 },
         })),
 
@@ -200,14 +202,14 @@ export const useAppStore = create<AppStore>((set) => ({
                 }
             });
             return {
-                content: { ...state.content, gallery: deduped, selectedUnitIds: [] },
+                content: { ...state.content, gallery: deduped, selectedUnitIds: [], selectionLocked: false },
                 ui: { ...state.ui, showImages: deduped.length > 0 },
             };
         }),
 
     clearGallery: () =>
         set((state) => ({
-            content: { ...state.content, gallery: [], selectedUnitIds: [] },
+            content: { ...state.content, gallery: [], selectedUnitIds: [], selectionLocked: false },
             ui: { ...state.ui, showImages: false },
         })),
 
@@ -228,8 +230,29 @@ export const useAppStore = create<AppStore>((set) => ({
 
     clearSelectedUnits: () =>
         set((state) => ({
-            content: { ...state.content, selectedUnitIds: [] },
+            content: { ...state.content, selectedUnitIds: [], selectionLocked: false },
         })),
+
+    keepOnlySelectedUnitsAndLock: () =>
+        set((state) => {
+            const ids = state.content.selectedUnitIds;
+            if (!ids || ids.length === 0) {
+                return state;
+            }
+            const filtered = state.content.gallery.filter((unit) => ids.includes(unit.id));
+            return {
+                content: {
+                    ...state.content,
+                    gallery: filtered,
+                    selectedUnitIds: ids,
+                    selectionLocked: true,
+                },
+                ui: {
+                    ...state.ui,
+                    showImages: filtered.length > 0,
+                },
+            };
+        }),
 
     // UI actions
     setMicButtonEnabled: (micButtonEnabled) =>

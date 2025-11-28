@@ -1,101 +1,198 @@
 {
-  "test_questions": [
+  "tests": [
     {
-      "id": 1,
-      "question": "عايز شقة بمساحة 150 متر وأقل من 6 مليون",
-      "expected_filters": ["Area == 150", "Price < 6000000"],
-      "description": "Filter apartments with 150m² area and price less than 6M"
+      "id": "single_explicit_code",
+      "steps": [
+        {
+          "user": "عايز تفاصيل الوحدة Hawabay/02/L/304",
+          "expected_codes": ["Hawabay/02/L/304"],
+          "description": "Exact code lookup should return the matching row (sea-view apartment)."
+        }
+      ]
     },
     {
-      "id": 2,
-      "question": "عايز فيلا بحديقة كبيرة أكتر من 200 متر",
-      "expected_filters": ["Usage == 'Villa'", "Garden > 200"],
-      "description": "Filter villas with garden larger than 200m²"
+      "id": "top3_expensive_apartments",
+      "steps": [
+        {
+          "user": "اديني أغلى 3 شقق عندكم",
+          "expected_order": {
+            "column": "Price",
+            "direction": "desc",
+            "limit": 3
+          },
+          "description": "Selector should sort by price descending and return top 3 units."
+        }
+      ]
     },
     {
-      "id": 3,
-      "question": "عايز شقة في الدور الأرضي بحديقة",
-      "expected_filters": ["Floor == 'Gr'", "Garden > 0"],
-      "description": "Filter ground floor apartments with garden"
+      "id": "cheapest_sea_view_apartment",
+      "steps": [
+        {
+          "user": "أقرب شقة sea view بس تكون سعرها أقل ما يمكن",
+          "expected_filters": {
+            "Usage": "Apartment",
+            "Description_contains_any": ["sea view", "مطل على البحر", "beach view"]
+          },
+          "expected_order": {
+            "column": "Price",
+            "direction": "asc",
+            "limit": 1
+          },
+          "description": "Find the cheapest sea-view apartment."
+        }
+      ]
     },
     {
-      "id": 4,
-      "question": "عايز شقة سعرها بين 5 مليون و 7 مليون",
-      "expected_filters": ["Price >= 5000000", "Price <= 7000000"],
-      "description": "Filter apartments with price between 5M and 7M"
+      "id": "garden_villa_ground_floor",
+      "steps": [
+        {
+          "user": "عايز جاردن فيلا في الدور الأرضي بحديقة كبيرة",
+          "expected_filters": {
+            "Usage": "Garden Villa",
+            "Floor": "Gr",
+            "Garden_greater_than": 80
+          },
+          "description": "Filter ground-floor garden villas with large garden."
+        }
+      ]
     },
     {
-      "id": 5,
-      "question": "عايز فيلا أو جاردن فيلا بمساحة أكتر من 300 متر",
-      "expected_filters": ["Usage in ['Villa', 'Garden Villa']", "Area > 300"],
-      "description": "Filter villas or garden villas with area > 300m²"
+      "id": "conversation_reference_code",
+      "steps": [
+        {
+          "user": "ممكن تشوف لي الشقة Hawabay/06/M/302؟",
+          "expected_codes": ["Hawabay/06/M/302"],
+          "description": "Initial explicit code lookup."
+        },
+        {
+          "user": "طب اللي قولتلك عليها دي نظام سدادها ايه؟",
+          "expected_codes": ["Hawabay/06/M/302"],
+          "uses_history": true,
+          "description": "Follow-up pronoun reference should reuse the same row."
+        }
+      ]
     },
     {
-      "id": 6,
-      "question": "عايز شقة في مبنى 02/L",
-      "expected_filters": ["Building == '02/L'"],
-      "description": "Filter apartments in building 02/L"
+      "id": "conversation_top2_then_filter_floor",
+      "steps": [
+        {
+          "user": "هاتلي أغلى شقتين في Hawabay sea view",
+          "expected_filters": {
+            "Project": "Hawabay",
+            "Description_contains_any": ["sea view", "مطل على البحر", "beach view"]
+          },
+          "expected_order": {
+            "column": "Price",
+            "direction": "desc",
+            "limit": 2
+          },
+          "description": "Initial request for top 2 sea-view units."
+        },
+        {
+          "user": "الشقة اللي فوق فيهم في دور كام؟ اختار لي اللي في الدور التاني لو موجود.",
+          "expected_filters": {
+            "Floor": "2nd"
+          },
+          "uses_history": true,
+          "description": "Follow-up referencing previous list by pronoun and applying a floor filter."
+        }
+      ]
     },
     {
-      "id": 7,
-      "question": "عايز شقة في الدور الثالث",
-      "expected_filters": ["Floor == '3rd'"],
-      "description": "Filter apartments on 3rd floor"
+      "id": "conversation_area_reference",
+      "steps": [
+        {
+          "user": "محتاج وحدة حوالي 189 متر",
+          "expected_filters": {
+            "Area": 189
+          },
+          "description": "Find units with 189 m² area."
+        },
+        {
+          "user": "اللي قولتلك عليها دي سعرها كام؟",
+          "expected_filters": {
+            "Area": 189
+          },
+          "uses_history": true,
+          "description": "Follow-up pronoun referencing same area filter."
+        }
+      ]
     },
     {
-      "id": 8,
-      "question": "عايز أرخص شقة متاحة",
-      "expected_filters": ["sort by Price ascending"],
-      "description": "Get cheapest apartment available"
+      "id": "conversation_same_building_comparison",
+      "steps": [
+        {
+          "user": "هاتلي شقة في مبنى 02/L الدور الأول",
+          "expected_filters": {
+            "Building": "02/L",
+            "Floor": "1st"
+          },
+          "description": "Initial selection."
+        },
+        {
+          "user": "طيب في شقة في نفس المبنى بس الدور التاني؟",
+          "expected_filters": {
+            "Building": "02/L",
+            "Floor": "2nd"
+          },
+          "uses_history": true,
+          "description": "Follow-up referencing 'same building'."
+        },
+        {
+          "user": "الشقة الأولى مساحتها قد ايه؟",
+          "expected_filters": {
+            "Building": "02/L",
+            "Floor": "1st"
+          },
+          "uses_history": true,
+          "description": "Return to the first mention."
+        }
+      ]
     },
     {
-      "id": 9,
-      "question": "عايز شقة بمساحة صغيرة أقل من 140 متر",
-      "expected_filters": ["Area < 140"],
-      "description": "Filter apartments with area less than 140m²"
+      "id": "conversation_switch_requirement",
+      "steps": [
+        {
+          "user": "دورلي على شقة حوالى 160 متر",
+          "expected_filters": {
+            "Area_between": [150, 170]
+          },
+          "description": "Initial broad area search."
+        },
+        {
+          "user": "لو نفس الشقة فيها جاردن صغير يبقى ممتاز",
+          "expected_filters": {
+            "Area_between": [150, 170],
+            "Garden_greater_than": 0
+          },
+          "uses_history": true,
+          "description": "Add garden constraint referencing same units."
+        }
+      ]
     },
     {
-      "id": 10,
-      "question": "عايز فيلا بروف أكتر من 90 متر",
-      "expected_filters": ["Usage == 'Villa'", "Roof > 90"],
-      "description": "Filter villas with roof area > 90m²"
-    },
-    {
-      "id": 11,
-      "question": "عايز شقة في الدور الأول أو الثاني",
-      "expected_filters": ["Floor in ['1st', '2nd']"],
-      "description": "Filter apartments on 1st or 2nd floor"
-    },
-    {
-      "id": 12,
-      "question": "عايز أغلى وحدة متاحة",
-      "expected_filters": ["sort by Price descending"],
-      "description": "Get most expensive unit available"
-    },
-    {
-      "id": 13,
-      "question": "عايز شقة بمساحة كبيرة أكتر من 180 متر",
-      "expected_filters": ["Area > 180"],
-      "description": "Filter apartments with area > 180m²"
-    },
-    {
-      "id": 14,
-      "question": "عايز سكاي فيلا بمساحة بين 240 و 300 متر",
-      "expected_filters": ["Usage == 'Sky Villa'", "Area >= 240", "Area <= 300"],
-      "description": "Filter sky villas with area between 240-300m²"
-    },
-    {
-      "id": 15,
-      "question": "عايز شقة بحديقة صغيرة أقل من 70 متر",
-      "expected_filters": ["Garden > 0", "Garden < 70"],
-      "description": "Filter apartments with small garden < 70m²"
+      "id": "conversation_alias_for_code",
+      "steps": [
+        {
+          "user": "ممكن تفاصيل Hawabay/23/G/1؟",
+          "expected_codes": ["Hawabay/23/G/1"],
+          "description": "Reference by full code."
+        },
+        {
+          "user": "طيب نرجع للشقة اللي بكود 23 اللي قولتلك عليها",
+          "expected_codes": ["Hawabay/23/G/1"],
+          "uses_history": true,
+          "description": "Follow-up referencing the previously mentioned code by shorthand."
+        }
+      ]
     }
   ],
   "metadata": {
     "csv_path": "data/11-15_sample25.csv",
-    "total_questions": 15,
     "language": "Egyptian Arabic",
-    "domain": "Real Estate Unit Selection"
+    "contextual_tests": 7,
+    "total_tests": 10,
+    "notes": "Each test defines expected filters or explicit codes to validate selector behavior with conversation memory."
   }
 }
 

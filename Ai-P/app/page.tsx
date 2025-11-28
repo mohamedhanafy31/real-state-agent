@@ -36,7 +36,7 @@ export default function Home() {
     setFrequencyData,
     incrementSessionTimer,
     setErrorMessage,
-    clearSelectedUnits,
+    keepOnlySelectedUnitsAndLock,
   } = useAppStore();
 
   const { connect, sendAudioChunk, endStream } = useWebSocket({
@@ -351,36 +351,6 @@ export default function Home() {
 
   const showImagePanel = ui.showImages && content.gallery.length > 0;
 
-  const buildSelectedUnitsMessage = useCallback(() => {
-    const selectedIds = content.selectedUnitIds;
-    if (!selectedIds || selectedIds.length === 0) {
-      return undefined;
-    }
-
-    const selectedUnits = selectedIds
-      .map((id) => content.gallery.find((unit) => unit.id === id))
-      .filter((unit): unit is NonNullable<typeof unit> => Boolean(unit));
-
-    if (selectedUnits.length === 0) {
-      return undefined;
-    }
-
-    const formatted = selectedUnits
-      .map((unit, index) => {
-        const highlightSummary = unit.highlights
-          ?.slice(0, 2)
-          .map((highlight) => `${highlight.label}: ${highlight.value}`)
-          .join('، ');
-
-        const subtitle = unit.subtitle ? ` – ${unit.subtitle}` : '';
-        const detail = highlightSummary ? ` (${highlightSummary})` : '';
-        return `${index + 1}. ${unit.title}${subtitle}${detail}`;
-      })
-      .join('\n');
-
-    return `مهتم بالوحدات :\n${formatted}`;
-  }, [content.gallery, content.selectedUnitIds]);
-
   // Handle mic button release (stop recording)
   const handleMicRelease = async () => {
     const timestamp = getTimestamp();
@@ -390,10 +360,13 @@ export default function Home() {
       recordingTimeoutRef.current = null;
     }
     
-    if (!audioCaptureRef.current || !connection.sessionId) {
+    // Get current state from store (not from closure) to avoid stale values
+    const currentConnection = useAppStore.getState().connection;
+    
+    if (!audioCaptureRef.current || !currentConnection.sessionId) {
       console.warn('[OrchestratorAPI] ⚠️ Cannot stop recording:', {
         hasAudioCapture: !!audioCaptureRef.current,
-        hasSessionId: !!connection.sessionId,
+        hasSessionId: !!currentConnection.sessionId,
         timestamp: timestamp
       });
       return;
@@ -403,8 +376,10 @@ export default function Home() {
       ? (timestamp - recordingStartTimeRef.current) / 1000
       : 0;
 
+    const currentSessionId = currentConnection.sessionId;
+
     console.log('[OrchestratorAPI] 🎤 Stopping recording:', {
-      sessionId: connection.sessionId,
+      sessionId: currentSessionId,
       recordingDuration: recordingDuration.toFixed(3) + 's',
       hasSentChunks: hasSentChunksRef.current,
       timestamp: timestamp
@@ -414,18 +389,37 @@ export default function Home() {
     setIsRecording(false);
 
     if (hasSentChunksRef.current) {
-      const additionalMessage = buildSelectedUnitsMessage();
       console.log('[OrchestratorAPI] 🎤 Audio chunks were sent, ending stream:', {
-        sessionId: connection.sessionId,
+        sessionId: currentSessionId,
         recordingDuration: recordingDuration.toFixed(3) + 's',
         timestamp: timestamp,
-        hasAdditionalMessage: Boolean(additionalMessage),
       });
       setBlobState('thinking');
-      await endStream(connection.sessionId, additionalMessage);
-      if (additionalMessage) {
-        clearSelectedUnits();
+
+      // Collect selected units and format as additional message
+      const selectedUnitIds = content.selectedUnitIds;
+      let additionalMessages: string | undefined = undefined;
+      
+      if (selectedUnitIds && selectedUnitIds.length > 0) {
+        // Get the selected units from the gallery
+        const selectedUnits = content.gallery.filter(unit => selectedUnitIds.includes(unit.id));
+        // Format unit information (using title or id)
+        const unitList = selectedUnits.map(unit => unit.title || unit.id).join(', ');
+        additionalMessages = `مهتم بالوحدات :\n${unitList}`;
+        
+        console.log('[OrchestratorAPI] 📋 Sending selected units as additional message:', {
+          selectedUnitIds: selectedUnitIds,
+          unitList: unitList,
+          additionalMessages: additionalMessages,
+          timestamp: timestamp
+        });
       }
+
+      await endStream(currentSessionId, additionalMessages);
+      // After a successful turn, keep only the selected units in the panel
+      // and lock selection so the user cannot change it for this answer.
+      // This is called AFTER endStream to ensure we've sent the message with the correct selection state.
+      keepOnlySelectedUnitsAndLock();
     } else {
       console.log('[OrchestratorAPI] ⚠️ No audio chunks sent, not ending stream:', {
         sessionId: connection.sessionId,
