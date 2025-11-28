@@ -166,11 +166,31 @@ if [[ "${DEPLOY_ORCH}" == "1" || "${DEPLOY_ORCH}" == "true" ]]; then
     # Wait for RAG URL if RAG is being deployed
     if [[ -n "${RAG_PID}" ]]; then
       echo "    [Orchestrator] Waiting for RAG deployment to get RAG_URL..."
+      # Wait for RAG process to complete
       wait "${RAG_PID}" 2>/dev/null || true
+      # Read RAG URL from temp file
       RAG_URL=$(cat "${RAG_TMPFILE}" 2>/dev/null || echo "")
+      # If still empty, wait a bit more and retry (deployment might still be writing)
       if [[ -z "${RAG_URL}" ]]; then
-        echo "⚠️  Warning: RAG_URL not available, using default or empty"
+        echo "    [Orchestrator] RAG_URL not in temp file yet, waiting 5 seconds..."
+        sleep 5
+        RAG_URL=$(cat "${RAG_TMPFILE}" 2>/dev/null || echo "")
+      fi
+      # If still empty, use default from environment or fail
+      if [[ -z "${RAG_URL}" ]]; then
+        echo "⚠️  Warning: RAG_URL not available, using RAG_API_URL from environment"
         RAG_URL="${RAG_API_URL:-}"
+        if [[ -z "${RAG_URL}" ]]; then
+          echo "✗ Error: RAG_URL is required but not available. Cannot deploy orchestrator." >&2
+          exit 1
+        fi
+      fi
+      echo "    [Orchestrator] Using RAG_URL: ${RAG_URL}"
+    else
+      # RAG not being deployed, use environment variable
+      RAG_URL="${RAG_API_URL:-}"
+      if [[ -z "${RAG_URL}" ]]; then
+        echo "⚠️  Warning: RAG_API_URL not set, orchestrator may not work correctly"
       fi
     fi
     
