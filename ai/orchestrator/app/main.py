@@ -26,10 +26,10 @@ async def lifespan(app: FastAPI):
     logger.info("Starting orchestrator service...")
     try:
         await redis_client.connect()
-        logger.info("Orchestrator service started successfully")
+        logger.info("Orchestrator service started successfully with Redis")
     except Exception as e:
-        logger.error(f"Failed to start orchestrator service: {e}")
-        raise
+        logger.warning(f"Redis connection failed: {e}. Service will continue without Redis (session state will not be persisted).")
+        logger.info("Orchestrator service started successfully (Redis disabled)")
     
     yield
     
@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
         await redis_client.disconnect()
         logger.info("Orchestrator service shut down successfully")
     except Exception as e:
-        logger.error(f"Error during shutdown: {e}")
+        logger.warning(f"Error during Redis shutdown: {e}")
 
 
 # Create FastAPI app

@@ -33,16 +33,25 @@ class RedisClient:
             await self.redis.ping()
             logger.info(f"Connected to Redis at {settings.redis_host}:{settings.redis_port}")
         except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
+            logger.warning(f"Failed to connect to Redis: {e}")
+            self.redis = None
+            self._connection_pool = None
             raise
     
     async def disconnect(self):
         """Disconnect from Redis."""
         if self.redis:
-            await self.redis.close()
+            try:
+                await self.redis.close()
+            except Exception as e:
+                logger.warning(f"Error closing Redis connection: {e}")
         if self._connection_pool:
-            await self._connection_pool.disconnect()
-        logger.info("Disconnected from Redis")
+            try:
+                await self._connection_pool.disconnect()
+            except Exception as e:
+                logger.warning(f"Error disconnecting Redis pool: {e}")
+        if self.redis or self._connection_pool:
+            logger.info("Disconnected from Redis")
     
     def _session_key(self, session_id: str) -> str:
         """Generate session state key."""
@@ -62,7 +71,8 @@ class RedisClient:
             ttl: Time to live in seconds
         """
         if not self.redis:
-            raise RuntimeError("Redis not connected")
+            logger.debug("Redis not connected, skipping session state storage")
+            return
         
         key = self._session_key(session_id)
         await self.redis.setex(
@@ -82,7 +92,8 @@ class RedisClient:
             State dictionary or None if not found
         """
         if not self.redis:
-            raise RuntimeError("Redis not connected")
+            logger.debug("Redis not connected, returning None for session state")
+            return None
         
         key = self._session_key(session_id)
         data = await self.redis.get(key)
@@ -98,7 +109,8 @@ class RedisClient:
             session_id: Session identifier
         """
         if not self.redis:
-            raise RuntimeError("Redis not connected")
+            logger.debug("Redis not connected, skipping session state deletion")
+            return
         
         key = self._session_key(session_id)
         await self.redis.delete(key)
@@ -113,7 +125,8 @@ class RedisClient:
             chunk: Audio chunk bytes
         """
         if not self.redis:
-            raise RuntimeError("Redis not connected")
+            logger.debug("Redis not connected, skipping audio chunk storage")
+            return
         
         key = self._audio_chunks_key(session_id)
         # Store as hash: seq -> chunk (base64 encoded)
@@ -132,7 +145,8 @@ class RedisClient:
             List of audio chunks in sequence order
         """
         if not self.redis:
-            raise RuntimeError("Redis not connected")
+            logger.debug("Redis not connected, returning empty audio chunks list")
+            return []
         
         key = self._audio_chunks_key(session_id)
         chunks_dict = await self.redis.hgetall(key)
@@ -157,7 +171,8 @@ class RedisClient:
             session_id: Session identifier
         """
         if not self.redis:
-            raise RuntimeError("Redis not connected")
+            logger.debug("Redis not connected, skipping audio chunks clearing")
+            return
         
         key = self._audio_chunks_key(session_id)
         await self.redis.delete(key)
