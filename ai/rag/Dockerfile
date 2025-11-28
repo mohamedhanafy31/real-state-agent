@@ -1,8 +1,7 @@
 FROM python:3.10-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
@@ -13,9 +12,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+# Upgrade pip first (cached layer)
+RUN pip install --upgrade pip
 
+# Copy only requirements first for better layer caching
+# This layer will be cached unless requirements.txt changes
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+
+# Copy application code (this invalidates cache only when code changes)
 COPY . .
 
 ENV PYTHONPATH=/app
