@@ -175,7 +175,7 @@ if [[ "${DEPLOY_ORCH}" == "1" || "${DEPLOY_ORCH}" == "true" ]]; then
     fi
     
     # Now deploy orchestrator with RAG_URL
-    local orch_deploy_args=(
+    orch_deploy_args=(
       --set-env-vars "RAG_API_URL=${RAG_URL}"
       --set-env-vars "ASR_API_URL=${ASR_API_URL}"
       --set-env-vars "TTS_API_URL=${TTS_API_URL}"
@@ -232,7 +232,7 @@ if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
     echo "⚠️  Warning: Orchestrator URL not available, building frontend without build args"
     FRONTEND_BUILD_ID="$(start_build "Ai-P" "${FRONTEND_IMAGE}")"
     wait_for_build "${FRONTEND_BUILD_ID}" "Frontend"
-    local frontend_deploy_args_fallback=(
+    frontend_deploy_args_fallback=(
       --set-env-vars "NEXT_PUBLIC_ORCHESTRATOR_URL=${ORCH_URL}"
       --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}"
     )
@@ -259,7 +259,7 @@ if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
     wait_for_build "${FRONTEND_BUILD_ID}" "Frontend"
     
     echo "==> Deploying frontend Cloud Run service"
-    local frontend_deploy_args=(
+    frontend_deploy_args=(
       --set-env-vars "NEXT_PUBLIC_ORCHESTRATOR_URL=${ORCH_URL}"
       --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}"
     )
