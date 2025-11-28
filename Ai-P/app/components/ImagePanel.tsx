@@ -45,41 +45,41 @@ export default function ImagePanel() {
     const { content, ui } = useAppStore();
     const gallery = content.gallery;
     const heroContainerRef = useRef<HTMLDivElement>(null);
-    const [activeId, setActiveId] = useState<string | null>(null);
-    const [heroLoaded, setHeroLoaded] = useState(false);
-    const [heroFailed, setHeroFailed] = useState(false);
+    const [activeId, setActiveId] = useState<string | null>(() => content.gallery[0]?.id ?? null);
+    const [heroStatus, setHeroStatus] = useState<Record<string, { loaded: boolean; failed: boolean }>>({});
 
     const hasGallery = ui.showImages && gallery.length > 0;
 
-    useEffect(() => {
+    const effectiveActiveId = useMemo(() => {
         if (!hasGallery) {
-            setActiveId(null);
-            return;
+            return null;
         }
-        if (!activeId || !gallery.some((unit) => unit.id === activeId)) {
-            setActiveId(gallery[0].id);
-            setHeroLoaded(false);
-            setHeroFailed(false);
+        if (activeId && gallery.some((unit) => unit.id === activeId)) {
+            return activeId;
         }
-    }, [gallery, hasGallery, activeId]);
+        return gallery[0]?.id ?? null;
+    }, [activeId, gallery, hasGallery]);
 
     useEffect(() => {
         if (!heroContainerRef.current || !hasGallery) {
             return;
         }
         heroContainerRef.current.scrollTop = 0;
-    }, [hasGallery, activeId]);
-
-    if (!hasGallery) {
-        return null;
-    }
+    }, [hasGallery, effectiveActiveId]);
 
     const heroUnit = useMemo(() => {
-        if (gallery.length === 0) {
+        if (!hasGallery) {
             return null;
         }
-        return gallery.find((unit) => unit.id === activeId) ?? gallery[0];
-    }, [gallery, activeId]);
+        const fallback = gallery[0];
+        if (!fallback) {
+            return null;
+        }
+        if (!effectiveActiveId) {
+            return fallback;
+        }
+        return gallery.find((unit) => unit.id === effectiveActiveId) ?? fallback;
+    }, [gallery, effectiveActiveId, hasGallery]);
 
     const secondaryUnits = useMemo(() => {
         if (!heroUnit) {
@@ -93,6 +93,7 @@ export default function ImagePanel() {
     }
 
     const heroImage = resolveImageUrl(heroUnit.imageUrl);
+    const currentHeroStatus = heroStatus[heroUnit.id] ?? { loaded: false, failed: false };
 
     const renderHighlights = (unit: GalleryUnit) => {
         if (!unit.highlights || unit.highlights.length === 0) {
@@ -129,19 +130,26 @@ export default function ImagePanel() {
                         src={heroImage}
                         alt={heroUnit.title}
                         className={styles.heroImage}
-                        onLoad={() => setHeroLoaded(true)}
+                        onLoad={() =>
+                            setHeroStatus((prev) => ({
+                                ...prev,
+                                [heroUnit.id]: { loaded: true, failed: false },
+                            }))
+                        }
                         onError={() => {
-                            setHeroFailed(true);
-                            setHeroLoaded(true);
+                            setHeroStatus((prev) => ({
+                                ...prev,
+                                [heroUnit.id]: { loaded: true, failed: true },
+                            }));
                         }}
                     />
-                    {!heroLoaded && (
+                    {!currentHeroStatus.loaded && (
                         <div className={styles.heroSkeleton}>
                             <span className={styles.loader} />
                             <p>جاري تحميل المعاينة…</p>
                         </div>
                     )}
-                    {heroFailed && (
+                    {currentHeroStatus.failed && (
                         <div className={styles.heroFallback}>
                             <p>تعذر تحميل الصورة</p>
                         </div>
@@ -170,7 +178,7 @@ export default function ImagePanel() {
                 <section className={styles.unitList}>
                     {secondaryUnits.map((unit) => {
                         const unitImage = resolveImageUrl(unit.imageUrl);
-                        const isActive = unit.id === activeId;
+                        const isActive = unit.id === effectiveActiveId;
                         return (
                             <button
                                 key={unit.id}
@@ -178,13 +186,9 @@ export default function ImagePanel() {
                                 className={`${styles.unitCard} ${isActive ? styles.unitCardActive : ''}`}
                                 onClick={() => {
                                     setActiveId(unit.id);
-                                    setHeroLoaded(false);
-                                    setHeroFailed(false);
                                 }}
                                 onMouseEnter={() => {
                                     setActiveId(unit.id);
-                                    setHeroLoaded(false);
-                                    setHeroFailed(false);
                                 }}
                             >
                                 <div className={styles.unitImageWrapper}>

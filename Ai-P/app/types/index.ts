@@ -65,7 +65,7 @@ export interface RagMetadataMessage {
     top_score?: number;
     num_structured_units?: number;
     structured_units?: Array<{
-        [key: string]: any;
+        [key: string]: unknown;
         image_url?: string;
     }>;
     unit_selector?: {
@@ -201,7 +201,7 @@ export interface GalleryUnit {
         label: string;
         value: string;
     }>;
-    raw?: Record<string, any>;
+    raw?: Record<string, unknown>;
 }
 
 // Audio Processing Types

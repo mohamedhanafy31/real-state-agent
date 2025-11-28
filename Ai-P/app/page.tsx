@@ -19,13 +19,14 @@ const statusMessages: Record<BlobState, string> = {
   speaking: 'الذكاء الاصطناعي يتحدث...',
 };
 
+const getTimestamp = () => Date.now();
+
 const MAX_RECORDING_DURATION_MS = 20000;
 
 export default function Home() {
   const {
     connection,
     blob,
-    audio,
     content,
     ui,
     setBlobState,
@@ -39,7 +40,7 @@ export default function Home() {
 
   const { connect, sendAudioChunk, endStream } = useWebSocket({
     onTTSAudio: (base64Audio) => {
-      const receiveTime = performance.now();
+      const receiveTime = getTimestamp();
       console.log('[OrchestratorAPI] 🎵 TTS audio received in page component:', {
         audioSize: base64Audio.length,
         audioSizeKB: (base64Audio.length / 1024).toFixed(2),
@@ -51,9 +52,7 @@ export default function Home() {
         audioPlaybackRef.current.queueSegment(base64Audio);
         setBlobState('speaking');
         setIsPlaying(true);
-        console.log('[OrchestratorAPI] ✅ TTS audio queued for playback:', {
-          timestamp: performance.now()
-        });
+        console.log('[OrchestratorAPI] ✅ TTS audio queued for playback');
       } else {
         console.warn('[OrchestratorAPI] ⚠️ TTS audio received but audioPlayback not initialized');
       }
@@ -177,17 +176,13 @@ export default function Home() {
   const hasConnectedRef = useRef(false);
   useEffect(() => {
     if (initialized && !hasConnectedRef.current) {
-      console.log('[OrchestratorAPI] 🔌 Initializing WebSocket connection:', {
-        timestamp: performance.now()
-      });
+      console.log('[OrchestratorAPI] 🔌 Initializing WebSocket connection');
       hasConnectedRef.current = true;
       connect();
     } else if (!initialized) {
-      console.log('[OrchestratorAPI] ⏳ Waiting for audio systems to initialize before connecting:', {
-        timestamp: performance.now()
-      });
+      console.log('[OrchestratorAPI] ⏳ Waiting for audio systems to initialize before connecting');
     }
-  }, [initialized]); // Removed connect from dependencies to prevent infinite loop
+  }, [initialized, connect]);
 
   // Session timer
   useEffect(() => {
@@ -206,9 +201,7 @@ export default function Home() {
   // Handle mic button press (start recording)
   const handleMicPress = async () => {
     if (!audioCaptureRef.current) {
-      console.warn('[OrchestratorAPI] ⚠️ Cannot start recording - audio capture not initialized:', {
-        timestamp: performance.now()
-      });
+      console.warn('[OrchestratorAPI] ⚠️ Cannot start recording - audio capture not initialized');
       return;
     }
 
@@ -216,8 +209,7 @@ export default function Home() {
     if (!connection.sessionId || connection.status === 'disconnected') {
       console.log('[OrchestratorAPI] 🔄 No active session, reconnecting before recording:', {
         hasSessionId: !!connection.sessionId,
-        connectionStatus: connection.status,
-        timestamp: performance.now()
+        connectionStatus: connection.status
       });
       hasConnectedRef.current = false; // Reset to allow reconnection
       connect();
@@ -234,7 +226,7 @@ export default function Home() {
       }
     }
 
-    const pressTime = performance.now();
+      const pressTime = getTimestamp();
     // Get current session ID from store (not from closure) to avoid stale values
     const currentConnection = useAppStore.getState().connection;
     console.log('[OrchestratorAPI] 🎤 Starting recording:', {
@@ -260,7 +252,7 @@ export default function Home() {
     }, MAX_RECORDING_DURATION_MS);
 
     audioCaptureRef.current.start((base64Audio, level) => {
-      const chunkTime = performance.now();
+      const chunkTime = getTimestamp();
       setAudioLevel(level);
       
       // Get current session ID from store (not from closure) to avoid stale values
@@ -306,7 +298,7 @@ export default function Home() {
 
   // Handle mic button release (stop recording)
   const handleMicRelease = async () => {
-    const timestamp = performance.now();
+    const timestamp = getTimestamp();
     
     if (recordingTimeoutRef.current) {
       clearTimeout(recordingTimeoutRef.current);
@@ -365,8 +357,6 @@ export default function Home() {
       }
       
       silentTimeoutRef.current = setTimeout(() => {
-        const checkTimestamp = performance.now();
-        
         // Get current state from store (not from closure) to avoid stale values
         const storeState = useAppStore.getState();
         const currentState = storeState.blob.state;

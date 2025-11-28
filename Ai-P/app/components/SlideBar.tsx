@@ -39,11 +39,9 @@ export default function SlideBar() {
             return;
         }
 
-        let initTimeout: NodeJS.Timeout;
-        let scrollCheckInterval: NodeJS.Timeout;
+        let scrollCheckInterval: NodeJS.Timeout | undefined;
         const itemWidth = 200 + 16; // image width + gap (16px)
         const totalItems = PLACEHOLDER_IMAGES.length;
-        const totalItemsWithDuplicates = totalItems * 2; // We duplicate images for seamless loop
 
         // Function to check if container can scroll
         const checkScrollability = () => {
@@ -79,7 +77,7 @@ export default function SlideBar() {
         // Store callback so it can be called when images load
         scrollCheckCallbackRef.current = waitForScrollability;
 
-            const startAutoScroll = () => {
+        const startAutoScroll = () => {
                 if (!container) {
                     return;
                 }
@@ -200,7 +198,7 @@ export default function SlideBar() {
         };
 
         // Wait a bit for images to load and DOM to settle
-        initTimeout = setTimeout(() => {
+        const initTimeout = setTimeout(() => {
             waitForScrollability();
         }, 500);
 
@@ -271,7 +269,7 @@ export default function SlideBar() {
             <div className={styles.edgeFadeLeft}></div>
             
             <div className={styles.imageCarousel} ref={scrollContainerRef}>
-                {PLACEHOLDER_IMAGES.map((item, index) => (
+        {PLACEHOLDER_IMAGES.map((item) => (
                     <div 
                         key={item.id} 
                         className={styles.imageItem}
@@ -308,7 +306,7 @@ export default function SlideBar() {
                     </div>
                 ))}
                 {/* Duplicate images for seamless loop */}
-                {PLACEHOLDER_IMAGES.map((item, index) => (
+                {PLACEHOLDER_IMAGES.map((item) => (
                     <div 
                         key={`duplicate-${item.id}`} 
                         className={styles.imageItem}

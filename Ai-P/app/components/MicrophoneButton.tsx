@@ -27,7 +27,7 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
     const isSpeaking = blob.state === 'speaking';
     const canInteract = blob.state === 'silent' || blob.state === 'listening';
 
-    const handlePointerDown = (e: React.PointerEvent) => {
+    const handlePointerDown = () => {
         if (!ui.micButtonEnabled || isToggleMode || isSpeaking || !canInteract) {
             return;
         }
@@ -35,7 +35,7 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
         onPress();
     };
 
-    const handlePointerUp = (e: React.PointerEvent) => {
+    const handlePointerUp = () => {
         if (!ui.micButtonEnabled || isToggleMode || isSpeaking || !canInteract) {
             return;
         }
@@ -78,9 +78,9 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
                 className={getButtonClass()}
                 onPointerDown={handlePointerDown}
                 onPointerUp={handlePointerUp}
-                onPointerLeave={(e) => {
+                onPointerLeave={() => {
                     if (!isToggleMode && isPressed) {
-                        handlePointerUp(e as any);
+                        handlePointerUp();
                     }
                 }}
                 onClick={handleClick}

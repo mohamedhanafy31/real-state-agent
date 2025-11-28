@@ -36,7 +36,7 @@
 }
 
 .interactionAreaWithPanel {
-    align-items: flex-start;
+    align-items: center;
 }
 
 .blobContainer {
@@ -64,13 +64,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
 }
 
 .statusShifted {
-    justify-content: flex-start;
-    padding-left: 0;
-    width: 100%;
-    text-align: left;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 .statusText {
@@ -111,11 +111,14 @@
 
 .micContainer {
     margin: 0;
+    display: flex;
+    justify-content: center;
+    width: 100%;
 }
 
 .micShifted {
-    align-self: flex-start;
-    margin-left: clamp(16px, 3vw, 48px);
+    align-self: center;
+    margin-left: 0;
 }
 
 .panelWrapper {

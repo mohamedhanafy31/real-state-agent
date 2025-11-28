@@ -53,10 +53,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         appendGalleryItems,
         clearGallery,
         setIsStreaming,
-        setIsPlaying,
-        setFrequencyData,
         setErrorMessage,
-        settings,
     } = useAppStore();
 
     const handleMessage = useCallback((event: MessageEvent) => {
@@ -269,7 +266,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                         console.log('[OrchestratorAPI] 🔌 Closing WebSocket after session closure (server already closed it)');
                         try {
                             wsRef.current.close(1000, 'Session completed');
-                        } catch (e) {
+                        } catch {
                             // Connection might already be closed
                         }
                     }
@@ -296,10 +293,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         setIsStreaming,
         setErrorMessage,
         setBlobState,
-        setConnectionStatus
+        setConnectionStatus,
+        setSessionId,
+        setWebSocket
     ]);
 
-    const connect = useCallback((sessionId?: string) => {
+    const connect = useCallback(function connectWithRetry(sessionId?: string) {
         const connectStartTime = performance.now();
         
         // If WebSocket is already open, check if we have an active session
@@ -322,7 +321,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                 // Close the existing connection (server already closed it, but clean up our side)
                 try {
                     wsRef.current.close(1000, 'Previous session completed');
-                } catch (e) {
+                } catch {
                     // Connection might already be closed
                 }
                 wsRef.current = null;
@@ -473,7 +472,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                         attempt: reconnectAttemptsRef.current,
                         timestamp: performance.now()
                     });
-                    connect(sessionId);
+                    connectWithRetry(sessionId);
                 }, delay);
             } else {
                 console.log('[OrchestratorAPI] ⛔ Max reconnection attempts reached, giving up');
@@ -481,7 +480,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         };
 
         return ws;
-    }, [setConnectionStatus, setWebSocket, setSessionId, setConnectionQuality, handleMessage]);
+    }, [setConnectionStatus, setWebSocket, setSessionId, setConnectionQuality, handleMessage, setErrorMessage]);
 
     // Internal function to actually send audio chunks
     const _sendAudioChunkImmediate = useCallback((base64Audio: string, sessionId: string, seq: number) => {
@@ -567,7 +566,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     }, []);
 
     // Process queued audio chunks with throttling
-    const _processAudioChunkQueue = useCallback(() => {
+    const _processAudioChunkQueue = useCallback(function processAudioChunkQueue() {
         if (audioChunkQueueRef.current.length === 0) {
             audioChunkThrottleTimerRef.current = null;
             return;
@@ -590,7 +589,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
         // Schedule next chunk if queue is not empty
         if (audioChunkQueueRef.current.length > 0) {
-            audioChunkThrottleTimerRef.current = setTimeout(_processAudioChunkQueue, AUDIO_CHUNK_SEND_THROTTLE_MS);
+            audioChunkThrottleTimerRef.current = setTimeout(processAudioChunkQueue, AUDIO_CHUNK_SEND_THROTTLE_MS);
         } else {
             audioChunkThrottleTimerRef.current = null;
         }
@@ -820,7 +819,9 @@ const ellipsize = (text: string | undefined, max = 80): string | undefined => {
     return text.length > max ? `${text.slice(0, max)}…` : text;
 };
 
-const normalizeStructuredUnits = (units: any[], sessionId: string): GalleryUnit[] => {
+type StructuredUnit = Record<string, unknown>;
+
+const normalizeStructuredUnits = (units: StructuredUnit[], sessionId: string): GalleryUnit[] => {
     if (!Array.isArray(units)) {
         return [];
     }
@@ -829,7 +830,7 @@ const normalizeStructuredUnits = (units: any[], sessionId: string): GalleryUnit[
         .filter((unit): unit is GalleryUnit => Boolean(unit));
 };
 
-const buildGalleryUnitFromStructuredUnit = (unit: Record<string, any>, fallbackId: string): GalleryUnit | null => {
+const buildGalleryUnitFromStructuredUnit = (unit: StructuredUnit, fallbackId: string): GalleryUnit | null => {
     if (!unit || typeof unit !== 'object') {
         return null;
     }
@@ -863,6 +864,7 @@ const buildGalleryUnitFromStructuredUnit = (unit: Record<string, any>, fallbackI
     const garden = formatArea(unit.Garden ?? unit.garden);
     const roof = formatArea(unit.Roof ?? unit.roof);
 
+    const description = sanitizeText(unit.Description ?? unit.description) || undefined;
     const tags = [project, usage, location].filter(Boolean).slice(0, 3);
     const highlights = [
         price && { label: 'السعر', value: price },
@@ -880,7 +882,7 @@ const buildGalleryUnitFromStructuredUnit = (unit: Record<string, any>, fallbackI
         id: code || fallbackId,
         title,
         subtitle,
-        description: unit.Description ?? unit.description,
+        description,
         imageUrl,
         tags,
         highlights,
@@ -903,7 +905,7 @@ const createGalleryUnitsFromUrls = (
             if (!normalized) {
                 return null;
             }
-            return {
+            const galleryUnit = {
                 id: `chunk-${sessionId}-${uuidv4()}`,
                 title: 'صورة مرجعية',
                 subtitle: chunkText ? ellipsize(chunkText, 60) : 'تم استخراجها أثناء الاستجابة',
@@ -916,7 +918,8 @@ const createGalleryUnitsFromUrls = (
                     chunkText,
                     url: normalized,
                 },
-            } as GalleryUnit;
+            } satisfies GalleryUnit;
+            return galleryUnit;
         })
-        .filter((unit): unit is GalleryUnit => Boolean(unit));
+        .filter(Boolean) as GalleryUnit[];
 };

@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useAppStore } from '@/store/useAppStore';
 import type { BlobState } from '@/types';
 import { vertexShader, fragmentShader } from './BlobShaders';
 import styles from './BlobCanvas.module.css';
+
+type SplitPiece = THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial> & {
+    materialRef: THREE.MeshStandardMaterial;
+    startColor: THREE.Color;
+    targetColor: THREE.Color;
+};
 
 export default function BlobCanvas() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -17,10 +23,9 @@ export default function BlobCanvas() {
     const animationIdRef = useRef<number | null>(null);
     const circlesRef = useRef<THREE.Mesh[]>([]);
     const thinkingStartTimeRef = useRef<number | null>(null);
-    const lastFrameTimeRef = useRef<number>(0);
     const isTransitioningRef = useRef<boolean>(false);
     const mainClockRef = useRef<THREE.Clock | null>(null);
-    const splitPiecesRef = useRef<THREE.Mesh[]>([]);
+    const splitPiecesRef = useRef<SplitPiece[]>([]);
     const isSplittingRef = useRef<boolean>(false);
 
     const { blob, content } = useAppStore();
@@ -28,7 +33,7 @@ export default function BlobCanvas() {
     const frequencyRef = useRef<number[]>(blob.frequencyData);
 
     // Get blob size based on device and images
-    const getBlobSize = () => {
+    const getBlobSize = useCallback(() => {
         const hasImages = content.gallery.length > 0;
         if (typeof window === 'undefined') return 450;
 
@@ -40,7 +45,7 @@ export default function BlobCanvas() {
         } else {
             return 450;
         }
-    };
+    }, [content.gallery.length]);
 
     useEffect(() => {
         if (!canvasRef.current) return;
@@ -119,7 +124,6 @@ export default function BlobCanvas() {
         const animate = () => {
             // Get current state from store directly (not from closure) to avoid stale values
             const currentStoreState = useAppStore.getState().blob.state;
-            const currentState = blobStateRef.current;
             const elapsedTime = clock.getElapsedTime();
 
             // THINKING state: camera adjustment only (animation handled in separate useEffect)
@@ -272,7 +276,7 @@ export default function BlobCanvas() {
             material.dispose();
             renderer.dispose();
         };
-    }, []);
+    }, [getBlobSize]);
 
     // Handle state transitions
     useEffect(() => {
@@ -375,7 +379,7 @@ export default function BlobCanvas() {
                 cameraRef.current.updateProjectionMatrix();
             }
         }
-    }, [blob.state]); // Keep dependency on blob.state to trigger re-render when store updates
+    }, [blob.state, getBlobSize]); // Keep dependency on blob.state to trigger re-render when store updates
 
     useEffect(() => {
         frequencyRef.current = blob.frequencyData;
@@ -450,10 +454,7 @@ export default function BlobCanvas() {
             isTransitioningRef.current = true;
             
             // Helper function for timestamped logging (disabled for silent/listening transitions)
-            const logWithTime = (_message: string, _data?: any) => {
-                // Don't log silent/listening transitions - too verbose
-                // Logging disabled for these transitions
-            };
+            const logWithTime = (..._args: unknown[]) => undefined;
             
             // Transform properties:
             // 1. Color: gradient (0) → unified color (1) via uListeningState
@@ -672,7 +673,7 @@ export default function BlobCanvas() {
                     roughness: 0.5,
                 });
                 
-                const piece = new THREE.Mesh(pieceGeometry, pieceMaterial);
+                const piece = new THREE.Mesh(pieceGeometry, pieceMaterial) as SplitPiece;
                 
                 // Start at exact same position as main blob (overlapping perfectly)
                 piece.position.copy(mainBlob.position);
@@ -681,9 +682,9 @@ export default function BlobCanvas() {
                 piece.scale.set(1, 1, 1);
                 
                 // Store material reference for color animation
-                (piece as any).materialRef = pieceMaterial;
-                (piece as any).startColor = startColor.clone();
-                (piece as any).targetColor = targetColor.clone();
+                piece.materialRef = pieceMaterial;
+                piece.startColor = startColor.clone();
+                piece.targetColor = targetColor.clone();
                 
                 // Initially they're all at the same position, so they look like one blob
                 scene.add(piece);
@@ -714,14 +715,10 @@ export default function BlobCanvas() {
                     piece.position.lerpVectors(startPos, targetPos, eased);
                     
                     // Animate color: transition from purple to black
-                    if ((piece as any).materialRef && (piece as any).startColor && (piece as any).targetColor) {
-                        const pieceMaterial = (piece as any).materialRef as THREE.MeshStandardMaterial;
-                        const startColor = (piece as any).startColor as THREE.Color;
-                        const targetColor = (piece as any).targetColor as THREE.Color;
-                        
+                    if (piece.materialRef && piece.startColor && piece.targetColor) {
                         // Interpolate color smoothly
-                        pieceMaterial.color.lerpColors(startColor, targetColor, eased);
-                        pieceMaterial.emissive.lerpColors(startColor, targetColor, eased);
+                        piece.materialRef.color.lerpColors(piece.startColor, piece.targetColor, eased);
+                        piece.materialRef.emissive.lerpColors(piece.startColor, piece.targetColor, eased);
                     }
                     
                     // Pieces maintain uniform scale to keep perfect circle shape
@@ -752,7 +749,7 @@ export default function BlobCanvas() {
                     // KEEP split pieces - they will stay visible in thinking mode
                     // DO NOT remove them - they need to be animated by the thinking animation loop
                     // Verify pieces are still in the scene
-                    splitPiecesRef.current.forEach((piece, i) => {
+                    splitPiecesRef.current.forEach((piece) => {
                         if (!scene.getObjectById(piece.id)) {
                             // Piece not found in scene after animation
                         }
@@ -816,7 +813,6 @@ export default function BlobCanvas() {
             const initialScales = pieces.map(piece => piece.scale.x);
             const centerPosition = new THREE.Vector3(0, 0, 0);
             const targetMainScale = 1.0;
-            const initialMainScale = mainBlob.scale.x;
 
             // Make main blob visible and prepare it
             mainBlob.visible = true;
