@@ -157,7 +157,21 @@ class RAGClient:
                 logger.info(f"Starting RAG stream query: {question[:50]}...")
                 
                 async with client.stream("POST", url, json=payload) as response:
-                    response.raise_for_status()
+                    # Check status before reading stream
+                    if response.status_code >= 400:
+                        # For error responses, try to read the error message from the stream
+                        error_body = ""
+                        try:
+                            async for line in response.aiter_lines():
+                                error_body += line + "\n"
+                                if len(error_body) > 1000:  # Limit error body size
+                                    break
+                        except Exception:
+                            pass
+                        
+                        error_msg = error_body.strip()[:500] if error_body else f"HTTP {response.status_code}"
+                        logger.error(f"RAG API error: {response.status_code} - {error_msg}")
+                        raise Exception(f"RAG service error: {response.status_code} - {error_msg}")
                     
                     full_text = ""
                     async for line in response.aiter_lines():
@@ -213,8 +227,19 @@ class RAGClient:
             logger.error(f"RAG API timeout after {self.timeout}s")
             raise Exception(f"RAG service timeout after {self.timeout} seconds")
         except httpx.HTTPStatusError as e:
-            logger.error(f"RAG API error: {e.response.status_code} - {e.response.text}")
+            # This should not happen since we check status_code above, but handle it anyway
+            error_detail = f"status {e.response.status_code}"
+            try:
+                # Try to read error response if it's not a streaming response
+                if not hasattr(e.response, 'is_stream_consumed') or not e.response.is_stream_consumed:
+                    error_detail = f"status {e.response.status_code}: {e.response.text[:500]}"
+            except Exception:
+                pass
+            logger.error(f"RAG API error: {error_detail}")
             raise Exception(f"RAG service error: {e.response.status_code}")
+        except httpx.RequestError as e:
+            logger.error(f"RAG API request failed: {e}")
+            raise Exception(f"Failed to reach RAG service: {e}")
         except Exception as e:
             logger.error(f"RAG API request failed: {e}")
             raise
