@@ -202,22 +202,29 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                     break;
                 }
 
-                case 'error':
-                    const errorCode = message.code;
-                    const errorMessage = message.message;
-                    const errorType = message.error_type || 'unknown';
+                case 'error': {
+                    if (!message || typeof message !== 'object') {
+                        console.error('[OrchestratorAPI] ❌ Received malformed error payload:', message);
+                        setErrorMessage('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
+                        setBlobState('silent');
+                        break;
+                    }
+
+                    const errorCode = Number(message.code ?? 0);
+                    const errorMessage = message.message || 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
+                    const errorType = (message.error_type as string) || 'unknown';
                     const isAudioTooLong = errorType === 'audio_too_long';
                     const isBufferOverflow = errorCode === 413 && !isAudioTooLong;
                     const shouldClearQueue = isBufferOverflow || isAudioTooLong;
                     const isTransientError = errorCode >= 500 || errorCode === 408 || errorCode === 429;
                     
                     console.error('[OrchestratorAPI] ❌ Error message:', {
-                        code: errorCode,
+                        code: errorCode || 'unknown',
                         message: errorMessage,
                         error_type: errorType,
-                        isBufferOverflow: isBufferOverflow,
-                        isAudioTooLong: isAudioTooLong,
-                        isTransientError: isTransientError,
+                        isBufferOverflow,
+                        isAudioTooLong,
+                        isTransientError,
                         timestamp: receiveTime
                     });
                     
@@ -238,6 +245,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                         audioChunkStatsRef.current = { count: 0, totalSize: 0, firstChunkTime: null, lastChunkTime: null };
                     }
                     break;
+                }
 
                 case 'session_closed':
                     console.log('[OrchestratorAPI] 🔒 Session closed:', {

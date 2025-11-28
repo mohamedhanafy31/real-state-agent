@@ -2,24 +2,27 @@
     min-height: 100vh;
     width: 100vw;
     position: relative;
+    display: flex;
+    justify-content: center;
+    padding-top: clamp(150px, 18vh, 230px);
 }
 
 .main {
     width: 100%;
-    min-height: 100vh;
+    min-height: calc(100vh - clamp(150px, 18vh, 230px));
     display: flex;
     flex-direction: column;
     gap: clamp(24px, 4vw, 56px);
-    align-items: center;
-    justify-content: center;
-    padding: 100px clamp(16px, 6vw, 80px) var(--spacing-xxl);
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 40px clamp(24px, 5vw, 80px) var(--spacing-xxl);
     position: relative;
 }
 
 .mainWithPanel {
     display: grid;
-    grid-template-columns: minmax(0, 4fr) minmax(280px, 1fr);
-    align-items: stretch;
+    grid-template-columns: minmax(0, 3.5fr) minmax(260px, 1fr);
+    align-items: start;
     gap: clamp(24px, 4vw, 56px);
 }
 
@@ -28,8 +31,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 220px);
+    justify-content: flex-start;
+    gap: clamp(24px, 3vw, 48px);
 }
 
 .interactionAreaWithPanel {
@@ -42,14 +45,14 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin: 2rem 0;
+    margin: 0;
     overflow: visible;
     width: 100%;
 }
 
 .blobShifted {
     align-items: flex-start;
-    margin-left: clamp(16px, 3vw, 60px);
+    margin-left: clamp(16px, 3vw, 48px);
     max-width: 760px;
 }
 
@@ -107,13 +110,12 @@
 }
 
 .micContainer {
-    margin-top: var(--spacing-xxl);
-    margin-bottom: var(--spacing-lg);
+    margin: 0;
 }
 
 .micShifted {
     align-self: flex-start;
-    margin-left: clamp(16px, 3vw, 60px);
+    margin-left: clamp(16px, 3vw, 48px);
 }
 
 .panelWrapper {
@@ -178,9 +180,13 @@
 
 /* Tablet Layout */
 @media (max-width: 1023px) {
+    .page {
+        padding-top: 150px;
+    }
+
     .main {
-        padding-top: 80px;
-        justify-content: flex-start;
+        min-height: calc(100vh - 150px);
+        padding-top: 30px;
     }
 
     .mainWithPanel {
@@ -238,8 +244,13 @@
 
 /* Mobile Layout */
 @media (max-width: 767px) {
+    .page {
+        padding-top: 140px;
+    }
+
     .main {
-        padding-top: 70px;
+        min-height: calc(100vh - 140px);
+        padding-top: 24px;
     }
 
     .mainWithPanel {
