@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import type { GalleryUnit, ServerMessage } from '@/types';
+import type { GalleryUnit, ServerMessage, ErrorMessage } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:8040/ws/voice';
