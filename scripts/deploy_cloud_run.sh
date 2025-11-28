@@ -109,6 +109,7 @@ if [[ "${DEPLOY_RAG}" == "1" || "${DEPLOY_RAG}" == "true" ]]; then
   RAG_URL=$(gcloud run deploy rag-api \
     --image "${RAG_IMAGE}" \
     --region "${REGION}" \
+    --memory=1Gi \
     --allow-unauthenticated \
     --set-env-vars "GEMINI_API_KEY=${GEMINI_API_KEY}" \
     --set-env-vars "LOG_LEVEL=INFO" \
