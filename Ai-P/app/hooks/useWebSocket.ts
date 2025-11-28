@@ -228,8 +228,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                     const isTransientError =
                         typeof errorCode === 'number' &&
                         (errorCode >= 500 || errorCode === 408 || errorCode === 429);
-                    
-                    console.error('[OrchestratorAPI] ❌ Error message:', {
+                    const isInformationalError =
+                        errorCode === undefined &&
+                        errorType === 'unknown' &&
+                        (rawMessage === undefined || rawMessage === null || String(rawMessage).trim().length === 0);
+
+                    const errorContext = {
                         code: errorCode ?? 'unknown',
                         message: errorMessage,
                         error_type: errorType,
@@ -238,7 +242,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                         isTransientError,
                         timestamp: receiveTime,
                         payload: message
-                    });
+                    };
+                    
+                    if (isInformationalError) {
+                        console.warn('[OrchestratorAPI] ⚠️ Generic error payload received:', errorContext);
+                    } else {
+                        console.error('[OrchestratorAPI] ❌ Error message:', errorContext);
+                    }
                     
                     setErrorMessage(errorMessage);
                     awaitingServerResponseRef.current = false;
