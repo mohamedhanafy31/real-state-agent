@@ -10,7 +10,7 @@
 }
 
 .container.withImages {
-    transform: translateX(-15%);
+    transform: none;
 }
 
 .canvas {

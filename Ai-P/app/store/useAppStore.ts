@@ -29,6 +29,8 @@ interface AppStore extends AppState {
     appendGalleryItems: (items: GalleryUnit[]) => void;
     clearGallery: () => void;
     setIsStreaming: (streaming: boolean) => void;
+    toggleUnitSelection: (unitId: string) => void;
+    clearSelectedUnits: () => void;
 
     // UI actions
     setMicButtonEnabled: (enabled: boolean) => void;
@@ -69,6 +71,7 @@ export const useAppStore = create<AppStore>((set) => ({
         transcript: null,
         response: '',
         gallery: [],
+        selectedUnitIds: [],
         isStreaming: false,
     },
 
@@ -175,7 +178,7 @@ export const useAppStore = create<AppStore>((set) => ({
 
     setGalleryItems: (items) =>
         set((state) => ({
-            content: { ...state.content, gallery: items },
+            content: { ...state.content, gallery: items, selectedUnitIds: [] },
             ui: { ...state.ui, showImages: items.length > 0 },
         })),
 
@@ -197,20 +200,35 @@ export const useAppStore = create<AppStore>((set) => ({
                 }
             });
             return {
-                content: { ...state.content, gallery: deduped },
+                content: { ...state.content, gallery: deduped, selectedUnitIds: [] },
                 ui: { ...state.ui, showImages: deduped.length > 0 },
             };
         }),
 
     clearGallery: () =>
         set((state) => ({
-            content: { ...state.content, gallery: [] },
+            content: { ...state.content, gallery: [], selectedUnitIds: [] },
             ui: { ...state.ui, showImages: false },
         })),
 
     setIsStreaming: (isStreaming) =>
         set((state) => ({
             content: { ...state.content, isStreaming },
+        })),
+
+    toggleUnitSelection: (unitId) =>
+        set((state) => {
+            const current = state.content.selectedUnitIds;
+            const exists = current.includes(unitId);
+            const next = exists ? current.filter((id) => id !== unitId) : [...current, unitId];
+            return {
+                content: { ...state.content, selectedUnitIds: next },
+            };
+        }),
+
+    clearSelectedUnits: () =>
+        set((state) => ({
+            content: { ...state.content, selectedUnitIds: [] },
         })),
 
     // UI actions

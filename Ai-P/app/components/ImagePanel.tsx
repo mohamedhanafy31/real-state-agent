@@ -2,10 +2,11 @@
 
 import { useAppStore } from '@/store/useAppStore';
 import type { GalleryUnit } from '@/types';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import styles from './ImagePanel.module.css';
 
 const FALLBACK_IMAGE = '/property1.jpg';
+const DESCRIPTION_PREVIEW_LIMIT = 220;
 
 const resolveImageUrl = (rawUrl?: string) => {
     if (!rawUrl || typeof rawUrl !== 'string') {
@@ -36,64 +37,28 @@ const resolveImageUrl = (rawUrl?: string) => {
     return `/api/image-proxy?url=${encodeURIComponent(trimmed)}`;
 };
 
-const truncate = (value?: string, max = 220) => {
-    if (!value) return '';
-    return value.length > max ? `${value.slice(0, max)}…` : value;
-};
-
 export default function ImagePanel() {
-    const { content, ui } = useAppStore();
+    const { content, ui, toggleUnitSelection } = useAppStore();
     const gallery = content.gallery;
-    const heroContainerRef = useRef<HTMLDivElement>(null);
-    const [activeId, setActiveId] = useState<string | null>(() => content.gallery[0]?.id ?? null);
-    const [heroStatus, setHeroStatus] = useState<Record<string, { loaded: boolean; failed: boolean }>>({});
-
     const hasGallery = ui.showImages && gallery.length > 0;
+    const selectedUnitIds = content.selectedUnitIds;
+    const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
-    const effectiveActiveId = useMemo(() => {
+    const displayUnits = useMemo(() => {
         if (!hasGallery) {
-            return null;
-        }
-        if (activeId && gallery.some((unit) => unit.id === activeId)) {
-            return activeId;
-        }
-        return gallery[0]?.id ?? null;
-    }, [activeId, gallery, hasGallery]);
-
-    useEffect(() => {
-        if (!heroContainerRef.current || !hasGallery) {
-            return;
-        }
-        heroContainerRef.current.scrollTop = 0;
-    }, [hasGallery, effectiveActiveId]);
-
-    const heroUnit = useMemo(() => {
-        if (!hasGallery) {
-            return null;
-        }
-        const fallback = gallery[0];
-        if (!fallback) {
-            return null;
-        }
-        if (!effectiveActiveId) {
-            return fallback;
-        }
-        return gallery.find((unit) => unit.id === effectiveActiveId) ?? fallback;
-    }, [gallery, effectiveActiveId, hasGallery]);
-
-    const secondaryUnits = useMemo(() => {
-        if (!heroUnit) {
             return [];
         }
-        return gallery.filter((unit) => unit.id !== heroUnit.id);
-    }, [gallery, heroUnit]);
+        return gallery.map((unit) => ({
+            ...unit,
+            image: resolveImageUrl(unit.imageUrl),
+            highlights: unit.highlights ?? [],
+            tags: unit.tags ?? [],
+        }));
+    }, [gallery, hasGallery]);
 
-    if (!hasGallery || !heroUnit) {
+    if (!hasGallery || displayUnits.length === 0) {
         return null;
     }
-
-    const heroImage = resolveImageUrl(heroUnit.imageUrl);
-    const currentHeroStatus = heroStatus[heroUnit.id] ?? { loaded: false, failed: false };
 
     const renderHighlights = (unit: GalleryUnit) => {
         if (!unit.highlights || unit.highlights.length === 0) {
@@ -101,11 +66,11 @@ export default function ImagePanel() {
         }
 
         return (
-            <div className={styles.metrics}>
-                {unit.highlights.slice(0, 4).map((item) => (
-                    <div key={`${unit.id}-${item.label}`} className={styles.metric}>
-                        <span className={styles.metricLabel}>{item.label}</span>
-                        <span className={styles.metricValue}>{item.value}</span>
+            <div className={styles.unitStats}>
+                {unit.highlights.slice(0, 3).map((item) => (
+                    <div key={`${unit.id}-${item.label}`} className={styles.unitStat}>
+                        <span className={styles.unitStatLabel}>{item.label}</span>
+                        <span className={styles.unitStatValue}>{item.value}</span>
                     </div>
                 ))}
             </div>
@@ -124,97 +89,67 @@ export default function ImagePanel() {
                 <span className={styles.badge}>مباشر من قاعدة البيانات</span>
             </header>
 
-            <section className={styles.heroCard} ref={heroContainerRef}>
-                <div className={styles.heroMedia}>
-                    <img
-                        src={heroImage}
-                        alt={heroUnit.title}
-                        className={styles.heroImage}
-                        onLoad={() =>
-                            setHeroStatus((prev) => ({
-                                ...prev,
-                                [heroUnit.id]: { loaded: true, failed: false },
-                            }))
-                        }
-                        onError={() => {
-                            setHeroStatus((prev) => ({
-                                ...prev,
-                                [heroUnit.id]: { loaded: true, failed: true },
-                            }));
-                        }}
-                    />
-                    {!currentHeroStatus.loaded && (
-                        <div className={styles.heroSkeleton}>
-                            <span className={styles.loader} />
-                            <p>جاري تحميل المعاينة…</p>
-                        </div>
-                    )}
-                    {currentHeroStatus.failed && (
-                        <div className={styles.heroFallback}>
-                            <p>تعذر تحميل الصورة</p>
-                        </div>
-                    )}
-                    {heroUnit.tags && heroUnit.tags.length > 0 && (
-                        <div className={styles.tagRow}>
-                            {heroUnit.tags.slice(0, 3).map((tag) => (
-                                <span key={`${heroUnit.id}-${tag}`} className={styles.tag}>
-                                    {tag}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                <div className={styles.heroDetails}>
-                    {heroUnit.subtitle && <p className={styles.heroSubtitle}>{heroUnit.subtitle}</p>}
-                    <h3 className={styles.heroTitle}>{heroUnit.title}</h3>
-                    {renderHighlights(heroUnit)}
-                    {heroUnit.description && (
-                        <p className={styles.heroDescription}>{truncate(heroUnit.description)}</p>
-                    )}
-                </div>
-            </section>
-
-            {secondaryUnits.length > 0 && (
-                <section className={styles.unitList}>
-                    {secondaryUnits.map((unit) => {
-                        const unitImage = resolveImageUrl(unit.imageUrl);
-                        const isActive = unit.id === effectiveActiveId;
-                        return (
-                            <button
-                                key={unit.id}
-                                type="button"
-                                className={`${styles.unitCard} ${isActive ? styles.unitCardActive : ''}`}
-                                onClick={() => {
-                                    setActiveId(unit.id);
-                                }}
-                                onMouseEnter={() => {
-                                    setActiveId(unit.id);
-                                }}
-                            >
-                                <div className={styles.unitImageWrapper}>
-                                    <img src={unitImage} alt={unit.title} className={styles.unitImage} />
-                                </div>
-                                <div className={styles.unitBody}>
-                                    <p className={styles.unitTitle}>{unit.title}</p>
-                                    {unit.subtitle && (
-                                        <p className={styles.unitSubtitle}>{unit.subtitle}</p>
-                                    )}
-                                    <div className={styles.unitHighlights}>
-                                        {unit.highlights.slice(0, 2).map((item) => (
-                                            <span
-                                                key={`${unit.id}-${item.label}`}
-                                                className={styles.unitHighlight}
-                                            >
-                                                {item.value}
+            <section className={styles.unitList}>
+                {displayUnits.map((unit) => {
+                    const isSelected = selectedUnitIds.includes(unit.id);
+                    return (
+                        <button
+                            key={unit.id}
+                            type="button"
+                            className={`${styles.unitCard} ${isSelected ? styles.unitCardSelected : ''}`}
+                            onClick={() => toggleUnitSelection(unit.id)}
+                            aria-pressed={isSelected}
+                        >
+                            <div className={styles.unitMedia}>
+                                <img src={unit.image} alt={unit.title} className={styles.unitImage} />
+                                {unit.tags && unit.tags.length > 0 && (
+                                    <div className={styles.mediaTagRow}>
+                                        {unit.tags.slice(0, 3).map((tag) => (
+                                            <span key={`${unit.id}-${tag}`} className={styles.mediaTag}>
+                                                {tag}
                                             </span>
                                         ))}
                                     </div>
-                                </div>
-                            </button>
-                        );
-                    })}
-                </section>
-            )}
+                                )}
+                                <span
+                                    className={`${styles.selectionToggle} ${isSelected ? styles.selectionToggleActive : ''}`}
+                                    aria-hidden="true"
+                                >
+                                    {isSelected ? '✓' : ''}
+                                </span>
+                            </div>
+                            <div className={styles.unitInfo}>
+                                {unit.subtitle && <p className={styles.unitSubtitle}>{unit.subtitle}</p>}
+                                <h3 className={styles.unitTitle}>{unit.title}</h3>
+                                {renderHighlights(unit)}
+                                {unit.description && (
+                                    <div className={styles.unitDescriptionWrapper}>
+                                        <p className={styles.unitDescription}>
+                                            {expandedDescriptions[unit.id] || unit.description.length <= DESCRIPTION_PREVIEW_LIMIT
+                                                ? unit.description
+                                                : `${unit.description.slice(0, DESCRIPTION_PREVIEW_LIMIT)}…`}
+                                        </p>
+                                        {unit.description.length > DESCRIPTION_PREVIEW_LIMIT && (
+                                            <button
+                                                type="button"
+                                                className={styles.moreToggle}
+                                                onClick={() =>
+                                                    setExpandedDescriptions((prev) => ({
+                                                        ...prev,
+                                                        [unit.id]: !prev[unit.id],
+                                                    }))
+                                                }
+                                            >
+                                                {expandedDescriptions[unit.id] ? 'عرض أقل' : 'المزيد'}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </button>
+                    );
+                })}
+            </section>
         </aside>
     );
 }

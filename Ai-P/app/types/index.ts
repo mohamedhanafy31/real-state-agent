@@ -168,6 +168,7 @@ export interface AppState {
         response: string;
         gallery: GalleryUnit[];
         isStreaming: boolean;
+        selectedUnitIds: string[];
     };
 
     ui: {
