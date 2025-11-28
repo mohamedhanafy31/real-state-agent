@@ -82,6 +82,7 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           ASR_API_URL: ${{ secrets.ASR_API_URL }}
           TTS_API_URL: ${{ secrets.TTS_API_URL }}
+          ORCHESTRATOR_SERVICE_KEY: ${{ secrets.ORCHESTRATOR_SERVICE_KEY }}
           PROJECT_ID: ${{ env.PROJECT_ID }}
           REGION: ${{ env.REGION }}
           DEPLOY_FRONTEND: ${{ env.DEPLOY_FRONTEND }}

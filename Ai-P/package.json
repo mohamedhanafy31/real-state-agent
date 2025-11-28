@@ -4,8 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:ngrok": "node scripts/ngrok.js",
+    "dev:tunnel": "concurrently \"npm run dev\" \"npm run dev:ngrok\"",
+    "dev:ngrok-all": "bash scripts/start-ngrok.sh",
     "build": "next build",
     "start": "next start",
+    "start:ngrok": "node scripts/ngrok.js 3000",
     "lint": "eslint"
   },
   "dependencies": {
@@ -26,8 +30,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.5",
+    "ngrok": "^5.0.0-beta.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

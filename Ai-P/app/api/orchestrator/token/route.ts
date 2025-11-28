@@ -1,7 +1,31 @@
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
-const ORCHESTRATOR_BASE_URL =
-  process.env.ORCHESTRATOR_BASE_URL ?? 'http://localhost:8040';
+// Get orchestrator URL, checking for ngrok if accessed via ngrok
+function getOrchestratorUrl(): string {
+  // If explicitly set via env var, use it
+  if (process.env.ORCHESTRATOR_BASE_URL) {
+    return process.env.ORCHESTRATOR_BASE_URL;
+  }
+
+  // For Cloud Run, try to construct from NEXT_PUBLIC_ORCHESTRATOR_URL if available
+  // This is set at build time or runtime
+  if (process.env.NEXT_PUBLIC_ORCHESTRATOR_URL) {
+    return process.env.NEXT_PUBLIC_ORCHESTRATOR_URL;
+  }
+
+  // When using nginx proxy, orchestrator is accessible via same origin
+  // Check if we're running in a server context (Next.js API route)
+  // The request will come through nginx, so we can use relative URL or localhost
+  // Since this is server-side, we can always use localhost
+  // Nginx will handle the proxying from the public URL to localhost:8040
+
+  // Default to localhost (nginx will proxy /auth/* to localhost:8040)
+  return 'http://localhost:8040';
+}
+
+const ORCHESTRATOR_BASE_URL = getOrchestratorUrl();
 const SERVICE_KEY = process.env.ORCHESTRATOR_SERVICE_KEY;
 const TOKEN_REFRESH_BUFFER_MS = 15_000; // refresh 15s before expiry
 

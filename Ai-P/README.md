@@ -31,6 +31,73 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Public URL with ngrok
+
+To expose your local development server and all backend services (orchestrator, RAG) to the internet using ngrok:
+
+### Option 1: Start all services with ngrok (Recommended)
+
+This will start ngrok tunnels for:
+- Frontend (Next.js) on port 3000
+- Orchestrator on port 8040
+- RAG service on port 8000
+
+```bash
+npm run dev:ngrok-all
+```
+
+The script will display all public URLs. Add them to your `.env.local`:
+
+```bash
+NEXT_PUBLIC_ORCHESTRATOR_WS_URL=wss://your-orchestrator-url.ngrok-free.app/ws/voice
+ORCHESTRATOR_BASE_URL=https://your-orchestrator-url.ngrok-free.app
+NEXT_PUBLIC_RAG_URL=https://your-rag-url.ngrok-free.app
+```
+
+### Option 2: Run Next.js and ngrok together (Frontend only)
+
+```bash
+npm run dev:tunnel
+```
+
+This will start both the Next.js dev server and ngrok tunnel for the frontend only.
+
+### Option 3: Run ngrok separately
+
+If your Next.js server is already running:
+
+```bash
+npm run dev:ngrok
+```
+
+Or specify a custom port:
+
+```bash
+npm run dev:ngrok 3000
+```
+
+### Option 4: For production build
+
+If you're running the production build (`npm run start`), use:
+
+```bash
+npm run start:ngrok
+```
+
+### Configuration
+
+For authenticated ngrok tunnels (recommended for production use), set the `NGROK_AUTHTOKEN` environment variable:
+
+```bash
+export NGROK_AUTHTOKEN=your_authtoken_here
+```
+
+Get your authtoken from [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken).
+
+The ngrok web interface (for inspecting requests) will be available at [http://127.0.0.1:4040](http://127.0.0.1:4040).
+
+**Note:** The Next.js cross-origin warning for ngrok has been fixed. The app will automatically detect when accessed via ngrok and use the correct WebSocket URLs.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

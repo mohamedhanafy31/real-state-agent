@@ -65,7 +65,6 @@ deploy_service() {
   local service_name="$1"
   local image="$2"
   shift 2
-  local deploy_args=("$@")
   
   echo "==> [${service_name}] Deploying to Cloud Run..." >&2
   local url
@@ -73,7 +72,7 @@ deploy_service() {
     --image "${image}" \
     --region "${REGION}" \
     --allow-unauthenticated \
-    "${deploy_args[@]}" \
+    "$@" \
     --format='value(status.url)')
   echo "✓ [${service_name}] Deployed at ${url}" >&2
   printf '%s\n' "${url}"
@@ -119,6 +118,14 @@ fi
 
 require_env GEMINI_API_KEY
 require_env JWT_SECRET
+
+# Orchestrator service key (for frontend to authenticate)
+# If not set, generate a warning but continue (will use static token if available)
+ORCHESTRATOR_SERVICE_KEY=${ORCHESTRATOR_SERVICE_KEY:-}
+if [[ -z "${ORCHESTRATOR_SERVICE_KEY}" ]]; then
+  echo "⚠️  Warning: ORCHESTRATOR_SERVICE_KEY not set. Frontend token endpoint will fail."
+  echo "    Set ORCHESTRATOR_SERVICE_KEY to match orchestrator's SERVICE_API_KEY"
+fi
 
 ASR_API_URL=${ASR_API_URL:-https://arabic-asr-api-22251281831.us-central1.run.app}
 TTS_API_URL=${TTS_API_URL:-https://arabic-tts-api-22251281831.us-central1.run.app}
@@ -168,12 +175,18 @@ if [[ "${DEPLOY_ORCH}" == "1" || "${DEPLOY_ORCH}" == "true" ]]; then
     fi
     
     # Now deploy orchestrator with RAG_URL
-    deploy_service "orchestrator" "${ORCH_IMAGE}" \
-      --set-env-vars "RAG_API_URL=${RAG_URL}" \
-      --set-env-vars "ASR_API_URL=${ASR_API_URL}" \
-      --set-env-vars "TTS_API_URL=${TTS_API_URL}" \
-      --set-env-vars "JWT_SECRET=${JWT_SECRET}" \
-      --set-env-vars "CORS_ORIGINS=*" > "${ORCH_TMPFILE}"
+    local orch_deploy_args=(
+      --set-env-vars "RAG_API_URL=${RAG_URL}"
+      --set-env-vars "ASR_API_URL=${ASR_API_URL}"
+      --set-env-vars "TTS_API_URL=${TTS_API_URL}"
+      --set-env-vars "JWT_SECRET=${JWT_SECRET}"
+      --set-env-vars "CORS_ORIGINS=*"
+    )
+    if [[ -n "${ORCHESTRATOR_SERVICE_KEY}" ]]; then
+      orch_deploy_args+=(--set-env-vars "SERVICE_API_KEY=${ORCHESTRATOR_SERVICE_KEY}")
+    fi
+    
+    deploy_service "orchestrator" "${ORCH_IMAGE}" "${orch_deploy_args[@]}" > "${ORCH_TMPFILE}"
   ) &
   ORCH_PID=$!
   echo "  Started Orchestrator build+deploy (PID: ${ORCH_PID})"
@@ -219,9 +232,18 @@ if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
     echo "⚠️  Warning: Orchestrator URL not available, building frontend without build args"
     FRONTEND_BUILD_ID="$(start_build "Ai-P" "${FRONTEND_IMAGE}")"
     wait_for_build "${FRONTEND_BUILD_ID}" "Frontend"
-    FRONTEND_URL=$(deploy_service "ai-p" "${FRONTEND_IMAGE}" \
-      --set-env-vars "NEXT_PUBLIC_ORCHESTRATOR_URL=${ORCH_URL}" \
-      --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}")
+    local frontend_deploy_args_fallback=(
+      --set-env-vars "NEXT_PUBLIC_ORCHESTRATOR_URL=${ORCH_URL}"
+      --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}"
+    )
+    if [[ -n "${ORCH_URL}" ]]; then
+      frontend_deploy_args_fallback+=(--set-env-vars "ORCHESTRATOR_BASE_URL=${ORCH_URL}")
+    fi
+    if [[ -n "${ORCHESTRATOR_SERVICE_KEY}" ]]; then
+      frontend_deploy_args_fallback+=(--set-env-vars "ORCHESTRATOR_SERVICE_KEY=${ORCHESTRATOR_SERVICE_KEY}")
+    fi
+    
+    FRONTEND_URL=$(deploy_service "ai-p" "${FRONTEND_IMAGE}" "${frontend_deploy_args_fallback[@]}")
   else
     # Build frontend with orchestrator URLs as build args
     echo "==> Building frontend with orchestrator URLs"
@@ -237,9 +259,18 @@ if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
     wait_for_build "${FRONTEND_BUILD_ID}" "Frontend"
     
     echo "==> Deploying frontend Cloud Run service"
-    FRONTEND_URL=$(deploy_service "ai-p" "${FRONTEND_IMAGE}" \
-      --set-env-vars "NEXT_PUBLIC_ORCHESTRATOR_URL=${ORCH_URL}" \
-      --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}")
+    local frontend_deploy_args=(
+      --set-env-vars "NEXT_PUBLIC_ORCHESTRATOR_URL=${ORCH_URL}"
+      --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}"
+    )
+    if [[ -n "${ORCH_URL}" ]]; then
+      frontend_deploy_args+=(--set-env-vars "ORCHESTRATOR_BASE_URL=${ORCH_URL}")
+    fi
+    if [[ -n "${ORCHESTRATOR_SERVICE_KEY}" ]]; then
+      frontend_deploy_args+=(--set-env-vars "ORCHESTRATOR_SERVICE_KEY=${ORCHESTRATOR_SERVICE_KEY}")
+    fi
+    
+    FRONTEND_URL=$(deploy_service "ai-p" "${FRONTEND_IMAGE}" "${frontend_deploy_args[@]}")
   fi
   
   if [[ -n "${FRONTEND_URL}" ]]; then

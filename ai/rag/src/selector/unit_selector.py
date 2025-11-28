@@ -782,7 +782,7 @@ class UnitSelector:
         return result if result else None
 
     def _refers_to_history(self, question: str) -> bool:
-        """Heuristic to detect pronoun-based references to previous turns."""
+        """Enhanced heuristic to detect pronoun-based references to previous turns."""
         if not question:
             return False
         lowered = question.lower()
@@ -817,17 +817,37 @@ class UnitSelector:
             "الهبله ديت",
             "الوحده دي",
             "الوحده ديت",
+            "عن الوحده",
+            "عن الشقة",
+            "عن الفيلا",
+            "الوحده",
+            "الشقة",
+            "الفيلا",
         ]
         pronoun_hits = any(phrase in lowered for phrase in reference_phrases)
 
         # Check for payment/installment queries that likely refer to previously mentioned units
-        payment_keywords = ["سداد", "دفع", "قسط", "payment", "installment", "السداد", "الدفع", "القسط"]
+        payment_keywords = [
+            "سداد", "دفع", "قسط", "payment", "installment", 
+            "السداد", "الدفع", "القسط", "خريطة", "خريطه",
+            "طرق السداد", "طرق الدفع", "خطة السداد", "خطة الدفع"
+        ]
         has_payment_keyword = any(keyword in lowered for keyword in payment_keywords)
         
-        # If query has payment keywords and references "this/that" unit, it's likely a follow-up
-        if has_payment_keyword and any(word in lowered for word in ["دي", "ديت", "ديها", "this", "that", "the"]):
+        # If query has payment keywords, it's likely referring to a previous unit
+        if has_payment_keyword:
             pronoun_hits = True
-            logger.debug("Detected payment/installment query referring to previous unit: %s", question[:50])
+            logger.debug("Detected payment/installment query - likely refers to previous unit: %s", question[:50])
+        
+        # If query has payment keywords and references "this/that" unit, it's definitely a follow-up
+        if has_payment_keyword and any(word in lowered for word in ["دي", "ديت", "ديها", "this", "that", "the", "عن"]):
+            pronoun_hits = True
+            logger.debug("Detected payment/installment query with explicit reference: %s", question[:50])
+
+        # Very short queries (< 30 chars) with payment keywords are likely follow-ups
+        if not pronoun_hits and len(question.strip()) < 30 and has_payment_keyword:
+            pronoun_hits = True
+            logger.debug("Short payment query detected as follow-up: %s", question[:50])
 
         # Also treat very short questions with no numbers as likely references.
         if not pronoun_hits and len(question.strip()) < 25 and not re.search(r"\d", question):
