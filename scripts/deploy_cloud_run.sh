@@ -28,13 +28,15 @@ if ! gcloud artifacts repositories describe metavr-services --location="${REGION
 fi
 
 echo "==> Building & pushing frontend image"
-(cd Ai-P && gcloud builds submit --tag "${FRONTEND_IMAGE}" .)
+# Use --no-stream-logs to avoid permission issues when the caller
+# cannot read from the Cloud Build logs bucket (common in CI).
+(cd Ai-P && gcloud builds submit --tag "${FRONTEND_IMAGE}" . --no-stream-logs)
 
 echo "==> Building & pushing RAG image"
-(cd ai/rag && gcloud builds submit --tag "${RAG_IMAGE}" .)
+(cd ai/rag && gcloud builds submit --tag "${RAG_IMAGE}" . --no-stream-logs)
 
 echo "==> Building & pushing orchestrator image"
-(cd ai/orchestrator && gcloud builds submit --tag "${ORCH_IMAGE}" .)
+(cd ai/orchestrator && gcloud builds submit --tag "${ORCH_IMAGE}" . --no-stream-logs)
 
 require_env GEMINI_API_KEY
 require_env JWT_SECRET
