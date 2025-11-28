@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
 // Get orchestrator URL, checking for ngrok if accessed via ngrok
 function getOrchestratorUrl(): string {
