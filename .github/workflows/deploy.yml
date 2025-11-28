@@ -26,6 +26,44 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
 
+      - name: Detect changed services
+        id: changes
+        run: |
+          set -euo pipefail
+
+          # Default: deploy everything (e.g. first run, manual dispatch)
+          DEPLOY_FRONTEND=1
+          DEPLOY_RAG=1
+          DEPLOY_ORCH=1
+
+          if [[ "${GITHUB_EVENT_NAME}" == "push" && -n "${GITHUB_SHA:-}" ]]; then
+            BASE_SHA="${GITHUB_EVENT_BEFORE:-}"
+            if [[ -z "${BASE_SHA}" || "${BASE_SHA}" == "0000000000000000000000000000000000000000" ]]; then
+              BASE_SHA="HEAD~1"
+            fi
+
+            echo "Comparing changes between ${BASE_SHA} and ${GITHUB_SHA}"
+            CHANGED_FILES="$(git diff --name-only "${BASE_SHA}" "${GITHUB_SHA}")"
+
+            DEPLOY_FRONTEND=0
+            DEPLOY_RAG=0
+            DEPLOY_ORCH=0
+
+            if echo "${CHANGED_FILES}" | grep -E '^Ai-P/|^scripts/deploy_cloud_run\.sh' >/dev/null; then
+              DEPLOY_FRONTEND=1
+            fi
+            if echo "${CHANGED_FILES}" | grep -E '^ai/rag/|^scripts/deploy_cloud_run\.sh' >/dev/null; then
+              DEPLOY_RAG=1
+            fi
+            if echo "${CHANGED_FILES}" | grep -E '^ai/orchestrator/|^scripts/deploy_cloud_run\.sh' >/dev/null; then
+              DEPLOY_ORCH=1
+            fi
+          fi
+
+          echo "DEPLOY_FRONTEND=${DEPLOY_FRONTEND}" >> "$GITHUB_ENV"
+          echo "DEPLOY_RAG=${DEPLOY_RAG}" >> "$GITHUB_ENV"
+          echo "DEPLOY_ORCH=${DEPLOY_ORCH}" >> "$GITHUB_ENV"
+
       - name: Deploy to Cloud Run
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -34,6 +72,9 @@ jobs:
           TTS_API_URL: ${{ secrets.TTS_API_URL }}
           PROJECT_ID: ${{ env.PROJECT_ID }}
           REGION: ${{ env.REGION }}
+          DEPLOY_FRONTEND: ${{ env.DEPLOY_FRONTEND }}
+          DEPLOY_RAG: ${{ env.DEPLOY_RAG }}
+          DEPLOY_ORCH: ${{ env.DEPLOY_ORCH }}
           UPDATE_GITHUB_SECRETS: "0"
         run: |
           chmod +x scripts/deploy_cloud_run.sh
