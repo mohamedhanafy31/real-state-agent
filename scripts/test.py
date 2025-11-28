@@ -1,10 +1,10 @@
 import os
 from google import genai
 
-api_key = "AIzaSyCvT2zcDyY-_rugPuXmh255pcX6bzh3BxA"
+api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 if not api_key:
     raise RuntimeError(
-        "Missing GOOGLE_API_KEY environment variable required for Google GenAI."
+        "Missing GOOGLE_API_KEY (or GEMINI_API_KEY) environment variable required for Google GenAI."
     )
 
 client = genai.Client(api_key=api_key)

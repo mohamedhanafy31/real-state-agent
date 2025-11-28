@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import os
 import time
 from pathlib import Path
 from typing import Dict, List
@@ -82,10 +83,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def ensure_api_key() -> str:
-    api_key = "AIzaSyCvT2zcDyY-_rugPuXmh255pcX6bzh3BxA"
-    print(api_key)
-    # if not api_key:
-    #     raise SystemExit("GEMINI_API_KEY environment variable is not set.")
+    """Return the Gemini API key from the environment or exit."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise SystemExit("GEMINI_API_KEY environment variable is not set.")
     return api_key
 
 
