@@ -262,6 +262,13 @@ DEFAULT_INDEX_PATH = "data/embeddings/index.faiss"
 DEFAULT_CHUNKS_PATH = "data/embeddings/chunks.pkl"
 DEFAULT_DATA_PATH = "data/raw"
 
+# Ensure data directories exist on startup
+logger.info("Ensuring data directories exist...")
+Path(DEFAULT_DATA_PATH).mkdir(parents=True, exist_ok=True)
+Path("data/embeddings").mkdir(parents=True, exist_ok=True)
+logger.info(f"✓ Data directories ready: {DEFAULT_DATA_PATH}, data/embeddings")
+
+
 
 def _normalize_raw_image_url(raw_url: str, request: Request) -> Optional[str]:
     """
