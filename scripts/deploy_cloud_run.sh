@@ -130,112 +130,73 @@ fi
 ASR_API_URL=${ASR_API_URL:-https://arabic-asr-api-22251281831.us-central1.run.app}
 TTS_API_URL=${TTS_API_URL:-https://arabic-tts-api-22251281831.us-central1.run.app}
 
-# Start all builds in parallel and deploy as soon as each completes
-echo "==> Starting all builds in parallel - deploying each service as its build completes"
+# Start all builds in parallel, but deploy in dependency order
+echo "==> Starting all builds in parallel"
 RAG_URL="${RAG_API_URL:-}"
 ORCH_URL="${ORCH_API_URL:-}"
+RAG_BUILD_ID=""
+ORCH_BUILD_ID=""
 RAG_PID=""
-ORCH_PID=""
-RAG_TMPFILE=$(mktemp)
-ORCH_TMPFILE=$(mktemp)
+ORCH_BUILD_PID=""
 
-# Start RAG build and deploy in background
+# Start RAG build in background
 if [[ "${DEPLOY_RAG}" == "1" || "${DEPLOY_RAG}" == "true" ]]; then
-  (
-    build_and_deploy "rag-api" "ai/rag" "${RAG_IMAGE}" \
-      --memory=4Gi \
-      --set-env-vars "GEMINI_API_KEY=${GEMINI_API_KEY}" \
-      --set-env-vars "LOG_LEVEL=INFO" \
-      --set-env-vars "CORS_ORIGINS=*" > "${RAG_TMPFILE}"
-  ) &
+  RAG_BUILD_ID="$(start_build "ai/rag" "${RAG_IMAGE}")"
+  # Start waiting for RAG build in background
+  (wait_for_build "${RAG_BUILD_ID}" "RAG") &
   RAG_PID=$!
-  echo "  Started RAG build+deploy (PID: ${RAG_PID})"
+  echo "  Started RAG build (PID: ${RAG_PID})"
 fi
 
-# Start Orchestrator build and deploy in background
-# Note: Orchestrator deployment needs RAG_URL, so we'll handle that after RAG completes
+# Start Orchestrator build in background (can build in parallel)
 if [[ "${DEPLOY_ORCH}" == "1" || "${DEPLOY_ORCH}" == "true" ]]; then
-  (
-    # First, build the orchestrator
-    ORCH_BUILD_ID="$(start_build "ai/orchestrator" "${ORCH_IMAGE}")"
-    if ! wait_for_build "${ORCH_BUILD_ID}" "Orchestrator"; then
-      echo "✗ Orchestrator build failed" >&2
+  ORCH_BUILD_ID="$(start_build "ai/orchestrator" "${ORCH_IMAGE}")"
+  # Start waiting for Orchestrator build in background
+  (wait_for_build "${ORCH_BUILD_ID}" "Orchestrator") &
+  ORCH_BUILD_PID=$!
+  echo "  Started Orchestrator build (PID: ${ORCH_BUILD_PID})"
+fi
+
+# Deploy RAG first (orchestrator depends on it)
+if [[ -n "${RAG_PID}" ]]; then
+  echo "==> Waiting for RAG build to complete, then deploying..."
+  wait "${RAG_PID}"
+  RAG_URL=$(deploy_service "rag-api" "${RAG_IMAGE}" \
+    --memory=4Gi \
+    --set-env-vars "GEMINI_API_KEY=${GEMINI_API_KEY}" \
+    --set-env-vars "LOG_LEVEL=INFO" \
+    --set-env-vars "CORS_ORIGINS=*")
+  echo "✓ RAG deployed at ${RAG_URL}"
+fi
+
+# Deploy Orchestrator (needs RAG_URL)
+if [[ -n "${ORCH_BUILD_PID}" ]]; then
+  echo "==> Waiting for Orchestrator build to complete, then deploying..."
+  wait "${ORCH_BUILD_PID}"
+  
+  # Ensure we have RAG_URL
+  if [[ -z "${RAG_URL}" ]]; then
+    RAG_URL="${RAG_API_URL:-}"
+    if [[ -z "${RAG_URL}" ]]; then
+      echo "✗ Error: RAG_URL is required for orchestrator deployment but not available" >&2
       exit 1
     fi
-    
-    # Wait for RAG URL if RAG is being deployed
-    if [[ -n "${RAG_PID}" ]]; then
-      echo "    [Orchestrator] Waiting for RAG deployment to get RAG_URL..."
-      # Wait for RAG process to complete
-      wait "${RAG_PID}" 2>/dev/null || true
-      # Read RAG URL from temp file
-      RAG_URL=$(cat "${RAG_TMPFILE}" 2>/dev/null || echo "")
-      # If still empty, wait a bit more and retry (deployment might still be writing)
-      if [[ -z "${RAG_URL}" ]]; then
-        echo "    [Orchestrator] RAG_URL not in temp file yet, waiting 5 seconds..."
-        sleep 5
-        RAG_URL=$(cat "${RAG_TMPFILE}" 2>/dev/null || echo "")
-      fi
-      # If still empty, use default from environment or fail
-      if [[ -z "${RAG_URL}" ]]; then
-        echo "⚠️  Warning: RAG_URL not available, using RAG_API_URL from environment"
-        RAG_URL="${RAG_API_URL:-}"
-        if [[ -z "${RAG_URL}" ]]; then
-          echo "✗ Error: RAG_URL is required but not available. Cannot deploy orchestrator." >&2
-          exit 1
-        fi
-      fi
-      echo "    [Orchestrator] Using RAG_URL: ${RAG_URL}"
-    else
-      # RAG not being deployed, use environment variable
-      RAG_URL="${RAG_API_URL:-}"
-      if [[ -z "${RAG_URL}" ]]; then
-        echo "⚠️  Warning: RAG_API_URL not set, orchestrator may not work correctly"
-      fi
-    fi
-    
-    # Now deploy orchestrator with RAG_URL
-    orch_deploy_args=(
-      --set-env-vars "RAG_API_URL=${RAG_URL}"
-      --set-env-vars "ASR_API_URL=${ASR_API_URL}"
-      --set-env-vars "TTS_API_URL=${TTS_API_URL}"
-      --set-env-vars "JWT_SECRET=${JWT_SECRET}"
-      --set-env-vars "CORS_ORIGINS=*"
-    )
-    if [[ -n "${ORCHESTRATOR_SERVICE_KEY}" ]]; then
-      orch_deploy_args+=(--set-env-vars "SERVICE_API_KEY=${ORCHESTRATOR_SERVICE_KEY}")
-    fi
-    
-    deploy_service "orchestrator" "${ORCH_IMAGE}" "${orch_deploy_args[@]}" > "${ORCH_TMPFILE}"
-  ) &
-  ORCH_PID=$!
-  echo "  Started Orchestrator build+deploy (PID: ${ORCH_PID})"
-fi
-
-# Wait for RAG to complete and get its URL
-if [[ -n "${RAG_PID}" ]]; then
-  echo "==> Waiting for RAG build and deployment to complete..."
-  if wait "${RAG_PID}"; then
-    RAG_URL=$(cat "${RAG_TMPFILE}" 2>/dev/null || echo "")
-    echo "✓ RAG deployment completed: ${RAG_URL}"
-  else
-    echo "✗ RAG deployment failed"
-    exit 1
+    echo "  Using RAG_URL from environment: ${RAG_URL}"
   fi
-  rm -f "${RAG_TMPFILE}"
-fi
-
-# Wait for Orchestrator to complete and get its URL
-if [[ -n "${ORCH_PID}" ]]; then
-  echo "==> Waiting for Orchestrator build and deployment to complete..."
-  if wait "${ORCH_PID}"; then
-    ORCH_URL=$(cat "${ORCH_TMPFILE}" 2>/dev/null || echo "")
-    echo "✓ Orchestrator deployment completed: ${ORCH_URL}"
-  else
-    echo "✗ Orchestrator deployment failed"
-    exit 1
+  
+  orch_deploy_args=(
+    --set-env-vars "RAG_API_URL=${RAG_URL}"
+    --set-env-vars "ASR_API_URL=${ASR_API_URL}"
+    --set-env-vars "TTS_API_URL=${TTS_API_URL}"
+    --set-env-vars "JWT_SECRET=${JWT_SECRET}"
+    --set-env-vars "CORS_ORIGINS=*"
+  )
+  if [[ -n "${ORCHESTRATOR_SERVICE_KEY}" ]]; then
+    orch_deploy_args+=(--set-env-vars "SERVICE_API_KEY=${ORCHESTRATOR_SERVICE_KEY}")
   fi
-  rm -f "${ORCH_TMPFILE}"
+  
+  ORCH_URL=$(deploy_service "orchestrator" "${ORCH_IMAGE}" "${orch_deploy_args[@]}")
+  echo "✓ Orchestrator deployed at ${ORCH_URL}"
 fi
 
 # Build and deploy frontend (needs orchestrator URL)
