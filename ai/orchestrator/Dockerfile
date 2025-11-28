@@ -21,6 +21,7 @@ RUN mkdir -p logs
 # Cloud Run provides the listening port via the PORT env var (default 8080).
 # We respect that here so the container starts correctly on the platform.
 ENV PORT=8080
+ENV PYTHONPATH=/app
 EXPOSE 8080
 
 # Run the application using Python wrapper that reads PORT env var
