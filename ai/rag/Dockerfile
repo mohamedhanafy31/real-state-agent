@@ -18,8 +18,7 @@ RUN pip install --upgrade pip
 # Copy only requirements first for better layer caching
 # This layer will be cached unless requirements.txt changes
 COPY requirements.txt .
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Copy application code (this invalidates cache only when code changes)
 COPY . .
