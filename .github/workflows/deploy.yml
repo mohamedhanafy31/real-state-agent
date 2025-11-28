@@ -80,6 +80,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           ASR_API_URL: ${{ secrets.ASR_API_URL }}
           TTS_API_URL: ${{ secrets.TTS_API_URL }}
           ORCHESTRATOR_SERVICE_KEY: ${{ secrets.ORCHESTRATOR_SERVICE_KEY }}

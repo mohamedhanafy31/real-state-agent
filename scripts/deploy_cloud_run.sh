@@ -166,6 +166,7 @@ if [[ -n "${RAG_PID}" ]]; then
     --cpu=2 \
     --min-instances=1 \
     --set-env-vars "GEMINI_API_KEY=${GEMINI_API_KEY}" \
+    --set-env-vars "HF_TOKEN=${HF_TOKEN:-}" \
     --set-env-vars "LOG_LEVEL=INFO" \
     --set-env-vars "CORS_ORIGINS=*")
   echo "✓ RAG deployed at ${RAG_URL}"
