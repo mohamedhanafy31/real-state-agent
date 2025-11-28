@@ -12,26 +12,26 @@ start_build() {
   local dir="$1"
   local image="$2"
 
-  echo "==> Building & pushing image ${image} from ${dir}"
+  echo "==> Building & pushing image ${image} from ${dir}" >&2
   local build_id
   build_id="$(
     cd "${dir}" && \
     gcloud builds submit --tag "${image}" . --async --format='value(name)'
   )"
-  echo "    Build started with ID: ${build_id}"
-  echo "${build_id}"
+  echo "    Build started with ID: ${build_id}" >&2
+  printf '%s\n' "${build_id}"
 }
 
 wait_for_build() {
   local build_id="$1"
 
-  echo "    Waiting for build ${build_id} to complete..."
+  echo "    Waiting for build ${build_id} to complete..." >&2
   # Poll build status without streaming logs (avoids logs bucket perms)
   while true; do
     status="$(gcloud builds describe "${build_id}" --format='value(status)')"
     case "${status}" in
       SUCCESS)
-        echo "    Build ${build_id} succeeded."
+        echo "    Build ${build_id} succeeded." >&2
         break
         ;;
       FAILURE|CANCELLED)
