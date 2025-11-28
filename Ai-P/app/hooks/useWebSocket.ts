@@ -207,22 +207,37 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                         break;
                     }
 
-                    const errorCode = Number(message.code ?? 0);
-                    const errorMessage = message.message || 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
-                    const errorType = (message.error_type as string) || 'unknown';
+                    const rawCode = (message as Partial<ErrorMessage>).code;
+                    const rawType = (message as Partial<ErrorMessage>).error_type;
+                    const rawMessage = (message as Partial<ErrorMessage>).message;
+
+                    const errorCode = typeof rawCode === 'number' && Number.isFinite(rawCode)
+                        ? rawCode
+                        : undefined;
+                    const errorMessage =
+                        typeof rawMessage === 'string' && rawMessage.trim().length > 0
+                            ? rawMessage
+                            : 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
+                    const errorType =
+                        typeof rawType === 'string' && rawType.trim().length > 0
+                            ? rawType
+                            : 'unknown';
                     const isAudioTooLong = errorType === 'audio_too_long';
                     const isBufferOverflow = errorCode === 413 && !isAudioTooLong;
                     const shouldClearQueue = isBufferOverflow || isAudioTooLong;
-                    const isTransientError = errorCode >= 500 || errorCode === 408 || errorCode === 429;
+                    const isTransientError =
+                        typeof errorCode === 'number' &&
+                        (errorCode >= 500 || errorCode === 408 || errorCode === 429);
                     
                     console.error('[OrchestratorAPI] ❌ Error message:', {
-                        code: errorCode || 'unknown',
+                        code: errorCode ?? 'unknown',
                         message: errorMessage,
                         error_type: errorType,
                         isBufferOverflow,
                         isAudioTooLong,
                         isTransientError,
-                        timestamp: receiveTime
+                        timestamp: receiveTime,
+                        payload: message
                     });
                     
                     setErrorMessage(errorMessage);

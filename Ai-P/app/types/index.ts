@@ -116,8 +116,8 @@ export interface TtsAudioMessage {
 export interface ErrorMessage {
     type: 'error';
     session_id: string;
-    code: number;  // Backend sends int, not string
-    message: string;
+    code?: number;  // Some error payloads omit code
+    message?: string;
     error_type?: string;  // Backend uses error_type, not details
     timestamp?: number;
 }
