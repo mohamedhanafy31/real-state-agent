@@ -10,7 +10,7 @@ from fastapi.openapi.docs import get_redoc_html
 from app.core.config import settings
 from app.logging_config import setup_logging, get_logger
 from app.services.redis_client import redis_client
-from app.api import health, metrics
+from app.api import health, metrics, auth
 from app.api import documents
 from app.api.websocket import websocket_endpoint
 
@@ -62,6 +62,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router, tags=["health"])
 app.include_router(metrics.router, tags=["metrics"])
+app.include_router(auth.router)
 app.include_router(documents.router)
 
 

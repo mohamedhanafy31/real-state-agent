@@ -139,6 +139,9 @@ orchestrator/
 | `REDIS_HOST` | Redis host | `localhost` |
 | `REDIS_PORT` | Redis port | `6379` |
 | `REDIS_PASSWORD` | Redis password | `None` |
+| `SERVICE_API_KEY` | Shared secret for issuing WebSocket tokens via `/auth/token` | `None` (disabled) |
+| `STATIC_CLIENT_TOKEN` | Optional legacy token accepted directly on WebSocket `start_session` | `None` |
+| `CLIENT_TOKEN_TTL_SECONDS` | Lifetime of issued JWTs | `300` |
 | `HOST` | Server host | `0.0.0.0` |
 | `PORT` | Server port | `8040` |
 | `JWT_SECRET` | JWT secret for authentication | `your-secret-key-change-in-production` |
@@ -182,6 +185,7 @@ Handles text input flow: Text → RAG → TTS → Audio
 - `PUT /documents/{filename}` - Overwrite an existing RAG document
 - `DELETE /documents/{filename}` - Remove a specific document (and optionally its index chunks)
 - `DELETE /documents` - Clear all documents (and optionally the FAISS index)
+- `POST /auth/token` - Exchange a trusted `X-Service-Key` for a short-lived JWT that the frontend can forward during `start_session`
 
 ## WebSocket Protocol
 

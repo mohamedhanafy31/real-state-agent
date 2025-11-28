@@ -3,13 +3,17 @@
     width: 100vw;
     position: relative;
     display: flex;
-    justify-content: center;
-    padding-top: clamp(150px, 18vh, 230px);
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: clamp(16px, 4vh, 40px);
+    padding: clamp(32px, 6vh, 72px) clamp(16px, 4vw, 48px) var(--spacing-xxl);
+    box-sizing: border-box;
 }
 
 .main {
-    width: 100%;
-    min-height: calc(100vh - clamp(150px, 18vh, 230px));
+    width: min(1200px, 100%);
+    min-height: calc(100vh - clamp(160px, 20vh, 260px));
     display: flex;
     flex-direction: column;
     gap: clamp(24px, 4vw, 56px);
@@ -17,11 +21,12 @@
     justify-content: flex-start;
     padding: 40px clamp(24px, 5vw, 80px) var(--spacing-xxl);
     position: relative;
+    margin: 0 auto;
 }
 
 .mainWithPanel {
     display: grid;
-    grid-template-columns: minmax(0, 3.5fr) minmax(260px, 1fr);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     align-items: start;
     gap: clamp(24px, 4vw, 56px);
 }
@@ -51,8 +56,8 @@
 }
 
 .blobShifted {
-    align-items: flex-start;
-    margin-left: clamp(16px, 3vw, 48px);
+    align-items: center;
+    margin-left: 0;
     max-width: 760px;
 }
 
@@ -123,7 +128,7 @@
 
 .panelWrapper {
     width: 100%;
-    max-width: 520px;
+    max-width: none;
     position: relative;
 }
 

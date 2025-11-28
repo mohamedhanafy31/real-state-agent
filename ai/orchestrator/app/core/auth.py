@@ -1,10 +1,14 @@
 """
 Authentication utilities for WebSocket connections.
 """
+import secrets
 import jwt
 from typing import Optional
 from fastapi import WebSocket, WebSocketException, status
 from app.core.config import settings
+
+
+DEFAULT_SECRET = "your-secret-key-change-in-production"
 
 
 def verify_token(token: str) -> bool:
@@ -17,24 +21,29 @@ def verify_token(token: str) -> bool:
     Returns:
         True if token is valid, False otherwise
     """
-    try:
-        # In production, verify against your auth service
-        # For now, simple check if token exists
-        if not token or token == "invalid":
-            return False
-        
-        # If JWT_SECRET is set and not default, verify JWT
-        if settings.jwt_secret != "your-secret-key-change-in-production":
-            try:
-                jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
-                return True
-            except jwt.InvalidTokenError:
-                return False
-        
-        # For development: accept any non-empty token
-        return len(token) > 0
-    except Exception:
+    if not token or token == "invalid":
         return False
+    
+    # Allow explicit static tokens (useful for local testing or migrations)
+    if settings.static_client_token:
+        try:
+            if secrets.compare_digest(token, settings.static_client_token):
+                return True
+        except Exception:
+            pass
+    
+    # Always attempt to validate as JWT
+    try:
+        jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        return True
+    except jwt.InvalidTokenError:
+        pass
+    
+    # For development, allow any non-empty token when using the default secret
+    if settings.jwt_secret == DEFAULT_SECRET:
+        return len(token) > 0
+    
+    return False
 
 
 def extract_token_from_message(message: dict) -> Optional[str]:

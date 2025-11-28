@@ -2,8 +2,14 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Orchestrator authentication
 
-The frontend sends a JWT to the orchestrator when establishing the WebSocket session.  
-Set `NEXT_PUBLIC_ORCHESTRATOR_TOKEN` in your `.env.local` (or via Docker Compose) to the token you want the orchestrator to validate. The hook at `app/hooks/useWebSocket.ts` reads the variable at build time—no code changes are required when the token rotates.
+The frontend now fetches a short-lived JWT from the orchestrator before opening the WebSocket.  
+Configure these environment variables (server-only) in `.env.local`:
+
+- `ORCHESTRATOR_BASE_URL` – e.g. `http://localhost:8040`
+- `ORCHESTRATOR_SERVICE_KEY` – must match the orchestrator's `SERVICE_API_KEY`
+
+At runtime the browser calls `/api/orchestrator/token`, which runs purely on the server, exchanges the service key for a JWT, caches it, and returns the token to the client.  
+For debugging you can still set `NEXT_PUBLIC_ORCHESTRATOR_TOKEN` to bypass the fetch and send a fixed token, but this should only be used locally.
 
 ## Getting Started
 

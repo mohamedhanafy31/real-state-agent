@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     
     # Authentication
     jwt_secret: str = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
+    static_client_token: Optional[str] = os.getenv("STATIC_CLIENT_TOKEN", None)
+    service_api_key: Optional[str] = os.getenv("SERVICE_API_KEY", None)
+    client_token_ttl_seconds: int = int(os.getenv("CLIENT_TOKEN_TTL_SECONDS", "300"))
     
     # Logging
     log_level: str = os.getenv("LOG_LEVEL", "INFO")

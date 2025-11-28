@@ -6,12 +6,7 @@ import type { GalleryUnit, ServerMessage, ErrorMessage } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:8040/ws/voice';
-const FALLBACK_TOKEN = 'dev-token';
-const ORCHESTRATOR_TOKEN = process.env.NEXT_PUBLIC_ORCHESTRATOR_TOKEN ?? FALLBACK_TOKEN;
-
-if (process.env.NEXT_PUBLIC_ORCHESTRATOR_TOKEN === undefined) {
-    console.warn('[OrchestratorAPI] ⚠️ NEXT_PUBLIC_ORCHESTRATOR_TOKEN is not set. Falling back to dev-token which will fail when auth is enforced.');
-}
+const STATIC_ORCHESTRATOR_TOKEN = process.env.NEXT_PUBLIC_ORCHESTRATOR_TOKEN;
 const RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY = [1000, 2000, 4000]; // Exponential backoff
 const MAX_AUDIO_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB (matches orchestrator limit)
@@ -34,6 +29,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     const audioChunkThrottleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const ttsQueueInfoRef = useRef<{queued: number, nextSeq: number} | null>(null);
     const awaitingServerResponseRef = useRef(false);
+    const tokenCacheRef = useRef<{ token: string; expiresAt: number } | null>(null);
     
     // Update ref when options change, but don't recreate callbacks
     useEffect(() => {
@@ -323,6 +319,51 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         setWebSocket
     ]);
 
+    const fetchAuthToken = useCallback(async (): Promise<string | null> => {
+        if (STATIC_ORCHESTRATOR_TOKEN) {
+            return STATIC_ORCHESTRATOR_TOKEN;
+        }
+
+        const now = Date.now();
+        if (
+            tokenCacheRef.current &&
+            tokenCacheRef.current.expiresAt - now > 15_000
+        ) {
+            return tokenCacheRef.current.token;
+        }
+
+        try {
+            const response = await fetch('/api/orchestrator/token', {
+                cache: 'no-store',
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(
+                    `Token endpoint responded with ${response.status}: ${errorText}`,
+                );
+            }
+            const data: { token: string; expires_at: string } =
+                await response.json();
+            if (!data.token || !data.expires_at) {
+                throw new Error('Token endpoint returned an invalid payload');
+            }
+            const expiresAt = new Date(data.expires_at).getTime();
+            tokenCacheRef.current = {
+                token: data.token,
+                expiresAt: Number.isFinite(expiresAt)
+                    ? expiresAt
+                    : now + 60_000,
+            };
+            return data.token;
+        } catch (error) {
+            console.error('[OrchestratorAPI] ❌ Failed to fetch auth token:', {
+                error,
+            });
+            setErrorMessage('تعذر المصادقة مع الخادم. حاول مرة أخرى.');
+            return null;
+        }
+    }, [setErrorMessage]);
+
     const connect = useCallback(function connectWithRetry(sessionId?: string) {
         const connectStartTime = performance.now();
         
@@ -369,7 +410,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         wsRef.current = ws;
         setWebSocket(ws);
 
-        ws.onopen = () => {
+        ws.onopen = async () => {
             const openTime = performance.now();
             const connectionTime = connectionStartTimeRef.current ? openTime - connectionStartTimeRef.current : 0;
             
@@ -387,10 +428,18 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             const sid = sessionId || uuidv4();
             setSessionId(sid);
 
+            const authToken = await fetchAuthToken();
+            if (!authToken) {
+                console.error('[OrchestratorAPI] ❌ Aborting session start, no auth token available');
+                setConnectionStatus('disconnected');
+                ws.close(1008, 'auth_failed');
+                return;
+            }
+
             const startSession = {
                 type: 'start_session',
                 session_id: sid,
-                auth: ORCHESTRATOR_TOKEN,
+                auth: authToken.startsWith('Bearer ') ? authToken : `Bearer ${authToken}`,
                 metadata: {
                     lang: 'ar', // Force 'ar' to match backend logic (ar-EG causes fallback to en-US)
                     sample_rate: 16000,
@@ -505,7 +554,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         };
 
         return ws;
-    }, [setConnectionStatus, setWebSocket, setSessionId, setConnectionQuality, handleMessage, setErrorMessage]);
+    }, [setConnectionStatus, setWebSocket, setSessionId, setConnectionQuality, handleMessage, setErrorMessage, fetchAuthToken]);
 
     // Internal function to actually send audio chunks
     const _sendAudioChunkImmediate = useCallback((base64Audio: string, sessionId: string, seq: number) => {
