@@ -34,7 +34,8 @@ class TestLLMGenerator:
         with patch('src.generator.llm_generator.genai'):
             generator = LLMGenerator(api_key=api_key)
             assert generator.api_key == api_key
-            assert generator.model_name == "gemini-pro"
+            # Default model name should be the class default
+            assert generator.model_name == "gemini-2.0-flash"
     
     def test_init_with_env_var(self):
         """Test initialization with environment variable."""
