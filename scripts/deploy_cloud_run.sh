@@ -141,7 +141,7 @@ fi
 FRONTEND_URL="${FRONTEND_URL:-}"
 if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
   echo "==> Deploying frontend Cloud Run service"
-  FRONTEND_URL=$(gcloud run deploy ai-frontend \
+  FRONTEND_URL=$(gcloud run deploy ai-p \
     --image "${FRONTEND_IMAGE}" \
     --region "${REGION}" \
     --allow-unauthenticated \
