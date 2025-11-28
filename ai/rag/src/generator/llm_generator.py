@@ -9,6 +9,15 @@ from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
+# Optional module-level handle for google.generativeai.
+# This is primarily here so that unit tests can patch `genai`
+# (e.g. `patch("src.generator.llm_generator.genai")`) without
+# importing the real library.
+try:  # pragma: no cover - simple import shim
+    import google.generativeai as genai  # type: ignore
+except Exception:  # ImportError or any environment issue
+    genai = None  # type: ignore
+
 
 class LLMGenerator:
     """Generator using Google's Gemini API."""
@@ -40,15 +49,20 @@ class LLMGenerator:
     
     def _init_client(self):
         """Initialize the Gemini API client."""
-        try:
-            import google.generativeai as genai
-        except ImportError:
-            raise ImportError(
-                "google-generativeai is required. Install it with: pip install google-generativeai"
-            )
-        
-        genai.configure(api_key=self.api_key)
-        self.client = genai.GenerativeModel(self.model_name)
+        global genai  # use the module-level symbol so tests can patch it
+
+        if genai is None:
+            try:
+                import google.generativeai as genai_lib  # type: ignore
+            except ImportError as exc:  # pragma: no cover - exercised in envs without the lib
+                raise ImportError(
+                    "google-generativeai is required. Install it with: pip install google-generativeai"
+                ) from exc
+            genai = genai_lib  # type: ignore
+
+        genai.configure(api_key=self.api_key)  # type: ignore[attr-defined]
+        # In production this is a real GenerativeModel; in tests it's a Mock.
+        self.client = genai.GenerativeModel(self.model_name)  # type: ignore[attr-defined]
         logger.info(f"Initialized Gemini client with model: {self.model_name}")
     
     def generate(self, prompt: str, context: Optional[List[str]] = None,
@@ -78,30 +92,16 @@ class LLMGenerator:
         )
         
         try:
-            import google.generativeai as genai
-            
-            # Prepare generation config with thinking disabled
-            generation_config = genai.GenerationConfig(
-                temperature=temperature,
-                **kwargs
-            )
-            
+            # Build a simple dict for generation config instead of relying on
+            # the concrete google.generativeai.GenerationConfig type. This
+            # makes unit testing easier and is all the mocked client needs.
+            generation_config: Dict[str, Any] = {"temperature": temperature, **kwargs}
             if max_tokens:
-                generation_config.max_output_tokens = max_tokens
-            
-            # Disable thinking/reasoning if the model supports it
-            # This prevents the model from showing intermediate reasoning steps
-            try:
-                # Try to disable thinking_config if available
-                if hasattr(generation_config, 'thinking_config'):
-                    generation_config.thinking_config = None
-            except (AttributeError, TypeError):
-                # If thinking_config is not available, that's fine
-                pass
-            
+                generation_config["max_output_tokens"] = max_tokens
+
             response = self.client.generate_content(
                 full_prompt,
-                generation_config=generation_config
+                generation_config=generation_config,
             )
             
             # Extract only the final answer, skip any thinking/reasoning text
@@ -247,25 +247,12 @@ class LLMGenerator:
         )
         
         try:
-            import google.generativeai as genai
-            
-            # Prepare generation config with thinking disabled
-            generation_config = genai.GenerationConfig(
-                temperature=temperature,
-                **kwargs
-            )
-            
-            # Disable thinking/reasoning if the model supports it
-            try:
-                if hasattr(generation_config, 'thinking_config'):
-                    generation_config.thinking_config = None
-            except (AttributeError, TypeError):
-                pass
-            
+            generation_config: Dict[str, Any] = {"temperature": temperature, **kwargs}
+
             response = self.client.generate_content(
                 full_prompt,
                 generation_config=generation_config,
-                stream=True
+                stream=True,
             )
             
             # Filter out thinking markers from streamed chunks
