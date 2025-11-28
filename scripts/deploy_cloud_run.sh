@@ -8,22 +8,24 @@ FRONTEND_IMAGE="${REPO}/ai-p:latest"
 RAG_IMAGE="${REPO}/rag-api:latest"
 ORCH_IMAGE="${REPO}/orchestrator:latest"
 
-build_and_wait() {
+start_build() {
   local dir="$1"
   local image="$2"
 
   echo "==> Building & pushing image ${image} from ${dir}"
-  # Submit build asynchronously so gcloud doesn't try to stream logs from
-  # the Cloud Build logs bucket (which often fails under restricted perms).
   local build_id
   build_id="$(
     cd "${dir}" && \
     gcloud builds submit --tag "${image}" . --async --format='value(name)'
   )"
+  echo "    Build started with ID: ${build_id}"
+  echo "${build_id}"
+}
 
-  echo "    Build ID: ${build_id}"
-  echo "    Waiting for build to complete..."
+wait_for_build() {
+  local build_id="$1"
 
+  echo "    Waiting for build ${build_id} to complete..."
   # Poll build status without streaming logs (avoids logs bucket perms)
   while true; do
     status="$(gcloud builds describe "${build_id}" --format='value(status)')"
@@ -62,9 +64,14 @@ if ! gcloud artifacts repositories describe metavr-services --location="${REGION
     --description="Containers for frontend, RAG, orchestrator"
 fi
 
-build_and_wait "Ai-P" "${FRONTEND_IMAGE}"
-build_and_wait "ai/rag" "${RAG_IMAGE}"
-build_and_wait "ai/orchestrator" "${ORCH_IMAGE}"
+echo "==> Starting Cloud Build jobs in parallel"
+FRONTEND_BUILD_ID="$(start_build "Ai-P" "${FRONTEND_IMAGE}")"
+RAG_BUILD_ID="$(start_build "ai/rag" "${RAG_IMAGE}")"
+ORCH_BUILD_ID="$(start_build "ai/orchestrator" "${ORCH_IMAGE}")"
+
+wait_for_build "${FRONTEND_BUILD_ID}"
+wait_for_build "${RAG_BUILD_ID}"
+wait_for_build "${ORCH_BUILD_ID}"
 
 require_env GEMINI_API_KEY
 require_env JWT_SECRET
