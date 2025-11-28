@@ -25,8 +25,17 @@ class RAGClient:
     """Client for RAG API service with streaming support."""
     
     def __init__(self):
-        self.base_url = settings.rag_api_url.rstrip("/")
+        rag_url = settings.rag_api_url.strip() if settings.rag_api_url else ""
+        if not rag_url:
+            raise ValueError("RAG_API_URL environment variable is not set or is empty")
+        if not rag_url.startswith(("http://", "https://")):
+            raise ValueError(
+                f"RAG_API_URL must start with 'http://' or 'https://'. "
+                f"Got: {rag_url[:50] if len(rag_url) > 50 else rag_url}"
+            )
+        self.base_url = rag_url.rstrip("/")
         self.timeout = settings.rag_timeout
+        logger.info(f"RAGClient initialized with base_url: {self.base_url}")
 
     async def _request_json(
         self,
