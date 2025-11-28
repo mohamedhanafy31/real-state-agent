@@ -1,0 +1,43 @@
+# Node
+Ai-P/node_modules
+Ai-P/.next
+
+# Python caches
+**/__pycache__/
+*.pyc
+
+# Virtual environments
+.venv
+venv
+
+# Logs & temp
+logs/
+*.log
+
+# Local env files
+.env
+.env.cloudrun
+Ai-P/.env*
+ai/orchestrator/.env
+ai/rag/.env
+
+# Individually ignored sample images
+images/02362f1b-8775-4422-bd5d-b3121411d1ad.jpg
+images/02b2363e-3b32-40d4-b7de-0d8e6f30405c.webp
+images/0557f372-272e-484a-9874-458d03a79a08.jpg
+images/073794ca-aa56-44d6-8678-873d899f459d.webp
+images/238211a4-7eff-4844-93df-f65f43498f79.jpg
+images/2a8175df-e4cf-470d-9c05-045bde0d6b37.jpg
+images/4e82397a-53aa-46d5-9780-bd2867a6d6ad.jpg
+images/5cbf5e2c-4a1f-4ca1-9f78-e5179026fd81.jpg
+images/5e9aa64b-79d3-46ff-b128-64c91177a547.webp
+images/6df5526b-a9fd-425a-b75a-9fdd6e70e680.webp
+images/741a2878-7a1f-4160-af54-011415b3fc7a.webp
+images/793bba68-c5ad-47d3-b9bb-15f09a194005.jpg
+images/7ab32a70-f2ce-4a79-bae9-ee7e69535cae.jpeg
+images/8665623b-8f09-4250-9356-21cea5e900c9.jpg
+images/89f2211d-7dc7-4fb7-b92c-c9a89169061e.jpg
+
+# Nested git metadata
+Ai-P/.git/
+

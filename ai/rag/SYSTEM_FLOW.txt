@@ -1,0 +1,375 @@
+================================================================================
+                    RAG CHATBOT SYSTEM - OVERALL FLOW
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           USER INTERFACE LAYER                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────────────┐
+    │   Web Browser        │
+    │   (index.html)       │
+    └──────────┬───────────┘
+               │
+               │ HTTP Requests
+               │ (GET/POST)
+               ▼
+    ┌──────────────────────┐
+    │   FastAPI Server     │
+    │   (app/api.py)       │
+    │   Port: 8000         │
+    └──────────┬───────────┘
+               │
+               ├─────────────────────────────────────────────────┐
+               │                                                 │
+               ▼                                                 ▼
+    ┌──────────────────────┐                      ┌──────────────────────┐
+    │   API Endpoints      │                      │   Static Files       │
+    │                      │                      │   (HTML/CSS/JS)      │
+    │  • GET  /health      │                      │                      │
+    │  • GET  /health/     │                      │                      │
+    │    detailed          │                      │                      │
+    │  • POST /query       │                      │                      │
+    │  • POST /query/      │                      │                      │
+    │    stream            │                      │                      │
+    │  • POST /ingest      │                      │                      │
+    │  • GET  /documents   │                      │                      │
+    │  • POST /documents/  │                      │                      │
+    │    upload            │                      │                      │
+    │  • DELETE /documents/│                      │                      │
+    │    {filename}        │                      │                      │
+    │  • POST /chat/clear  │                      │                      │
+    │  • GET  /chat/       │                      │                      │
+    │    history           │                      │                      │
+    └──────────┬───────────┘                      └──────────────────────┘
+               │
+               │
+               ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         INGESTION FLOW (Building Index)                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────────────┐
+    │  Documents Upload    │
+    │  (PDF, DOCX, TXT, MD)│
+    │  → data/raw/         │
+    └──────────┬───────────┘
+               │
+               │ POST /ingest
+               ▼
+    ┌──────────────────────┐
+    │  LangGraph Pipeline  │
+    │  (rag_graph/main.py) │
+    └──────────┬───────────┘
+               │
+               │ State: RAGState
+               ▼
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │                    LANGGRAPH NODES (Ingestion)                       │
+    └─────────────────────────────────────────────────────────────────────┘
+               │
+               ├─► [1] load_documents
+               │   └─► src/ingestion/loader.py
+               │       • PDFLoader
+               │       • DOCXLoader
+               │       • TXTLoader
+               │       • MDLoader
+               │       └─► Returns: List[Document]
+               │
+               ├─► [2] clean_text
+               │   └─► src/ingestion/cleaner.py
+               │       • Arabic text normalization
+               │       • Egyptian dialect handling
+               │       • Remove diacritics
+               │       • Normalize characters
+               │       └─► Returns: Cleaned text
+               │
+               ├─► [3] chunk_documents
+               │   └─► src/ingestion/chunker.py
+               │       • Paragraph-based chunking
+               │       • Min/Max size: 100/1000 chars
+               │       • Overlap: 50 chars
+               │       └─► Returns: List[Chunk]
+               │
+               ├─► [4] embed_chunks
+               │   └─► src/embeddings/embedder.py
+               │       • AraModernBERTEmbedder
+               │       • Model: mohamed2811/Muffakir_Embedding_V2
+               │       • Device: CUDA (if available)
+               │       • Batch processing
+               │       └─► Returns: Embeddings (1024 dim)
+               │
+               └─► [5] store_embeddings
+                   └─► src/vector_store/faiss_store.py
+                       • FAISS Index (L2 distance)
+                       • Save: data/embeddings/index.faiss
+                       • Save: data/embeddings/chunks.pkl
+                       └─► Returns: Index path
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         QUERY FLOW (Answering Questions)                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────────────┐
+    │  User Question       │
+    │  (Arabic/English)    │
+    └──────────┬───────────┘
+               │
+               │ POST /query or /query/stream
+               │ + session_id (for memory)
+               ▼
+    ┌──────────────────────┐
+    │  Chat Memory         │
+    │  (BufferWindowMemory)│
+    │  • Get history       │
+    │  • Max: 20 messages  │
+    └──────────┬───────────┘
+               │
+               │
+               ▼
+    ┌──────────────────────┐
+    │  LangGraph Pipeline  │
+    │  (rag_graph/main.py) │
+    └──────────┬───────────┘
+               │
+               │ State: RAGState
+               ▼
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │                    LANGGRAPH NODES (Query)                           │
+    └─────────────────────────────────────────────────────────────────────┘
+               │
+               ├─► [1] embed_query
+               │   └─► src/embeddings/embedder.py
+               │       • Same embedder as ingestion
+               │       • Query → Embedding (1024 dim)
+               │       └─► Returns: Query embedding
+               │
+               ├─► [2] retrieve_chunks
+               │   └─► src/retrieval/retriever.py
+               │       • Load FAISS index
+               │       • Load chunks.pkl
+               │       • Vector similarity search
+               │       • Top-K retrieval (default: 5)
+               │       └─► Returns: Top-K relevant chunks
+               │
+               └─► [3] generate_answer
+                   └─► src/generator/llm_generator.py
+                       • Gemini API (gemini-2.0-flash)
+                       • Build prompt with:
+                         - Context (retrieved chunks)
+                         - Conversation history
+                         - User question
+                       • Egyptian dialect instructions
+                       • Streaming support (SSE)
+                       └─► Returns: Generated answer
+                           │
+                           │
+                           ▼
+               ┌──────────────────────┐
+               │  Save to Memory      │
+               │  • User message      │
+               │  • Assistant response│
+               └──────────────────────┘
+                           │
+                           │
+                           ▼
+               ┌──────────────────────┐
+               │  Response to User    │
+               │  (Streaming/JSON)    │
+               └──────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         DATA FLOW & STORAGE                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    Documents
+    └─► data/raw/
+        • TransIT_Profile[1].docx
+        • *.pdf, *.txt, *.md, *.docx
+
+    Processed Data
+    └─► data/embeddings/
+        • index.faiss          (FAISS vector index)
+        • chunks.pkl           (Chunk metadata & text)
+
+    Configuration
+    └─► config/settings.yaml
+        • Embedding model config
+        • Generator config
+        • Memory config
+        • Paths config
+
+    Environment
+    └─► .env
+        • GEMINI_API_KEY
+        • HOST, PORT
+        • LOG_DIR, LOG_LEVEL
+        • CUDA_DEVICE
+
+    Logs
+    └─► logs/
+        • api_YYYYMMDD_HHMMSS.log
+        • ingestion_YYYYMMDD_HHMMSS.log
+        • query_YYYYMMDD_HHMMSS.log
+        • errors_YYYYMMDD_HHMMSS.log
+        • all_YYYYMMDD_HHMMSS.log
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         COMPONENT INTERACTIONS                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────┐
+    │   Web UI     │◄──┐
+    └──────┬───────┘   │
+           │           │
+           │ HTTP      │ SSE (Server-Sent Events)
+           │           │
+           ▼           │
+    ┌──────────────┐   │
+    │  FastAPI     │───┘
+    │  (app/api.py)│
+    └──────┬───────┘
+           │
+           ├──► LangGraph Pipeline
+           │    └─► rag_graph/graph.py
+           │
+           ├──► Embedding Model (Preloaded)
+           │    └─► AraModernBERTEmbedder
+           │        • Loaded at startup
+           │        • Cached in memory
+           │
+           ├──► Vector Store
+           │    └─► FAISSStore
+           │        • Loaded on-demand
+           │        • From: data/embeddings/
+           │
+           ├──► LLM Generator
+           │    └─► LLMGenerator
+           │        • Gemini API client
+           │        • Streaming support
+           │
+           └──► Chat Memory
+                └─► BufferWindowMemory
+                    • Session-based
+                    • In-memory storage
+                    • Max 20 messages per session
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         REQUEST/RESPONSE FLOW                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    INGESTION REQUEST:
+    ┌─────────────────────────────────────────────────────────────┐
+    │ POST /ingest                                                 │
+    │ {                                                            │
+    │   "data_path": "data/raw",                                   │
+    │   "chunk_min_size": 100,                                     │
+    │   "chunk_max_size": 1000                                     │
+    │ }                                                            │
+    └──────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+    ┌─────────────────────────────────────────────────────────────┐
+    │ Background Task: run_ingestion()                             │
+    │                                                              │
+    │ 1. Load documents → List[Document]                          │
+    │ 2. Clean text → Cleaned text                                │
+    │ 3. Chunk documents → List[Chunk]                            │
+    │ 4. Embed chunks → Embeddings                                │
+    │ 5. Store embeddings → FAISS index                           │
+    └──────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+    ┌─────────────────────────────────────────────────────────────┐
+    │ Response:                                                    │
+    │ {                                                            │
+    │   "status": "success",                                       │
+    │   "num_documents": 1,                                        │
+    │   "num_chunks": 7,                                           │
+    │   "num_embeddings": 7                                        │
+    │ }                                                            │
+    └─────────────────────────────────────────────────────────────┘
+
+
+    QUERY REQUEST (Streaming):
+    ┌─────────────────────────────────────────────────────────────┐
+    │ POST /query/stream                                           │
+    │ {                                                            │
+    │   "question": "ما هي الخدمات المتاحة؟",                      │
+    │   "session_id": "session_123456",                            │
+    │   "retrieval_k": 5                                           │
+    │ }                                                            │
+    └──────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+    ┌─────────────────────────────────────────────────────────────┐
+    │ 1. Get conversation history from memory                      │
+    │ 2. Embed query → Query embedding                             │
+    │ 3. Load FAISS index                                          │
+    │ 4. Retrieve top-K chunks                                     │
+    │ 5. Generate answer (streaming)                               │
+    │ 6. Save to memory                                            │
+    └──────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+    ┌─────────────────────────────────────────────────────────────┐
+    │ SSE Stream Response:                                         │
+    │                                                              │
+    │ data: {"type": "metadata", "num_chunks": 5, ...}            │
+    │                                                              │
+    │ data: {"type": "chunk", "text": "الخدمات المتاحة..."}       │
+    │ data: {"type": "chunk", "text": " تشمل..."}                  │
+    │ ...                                                          │
+    │                                                              │
+    │ data: {"type": "done", "full_text": "...", ...}             │
+    └─────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         STARTUP SEQUENCE                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    1. Load environment variables (.env)
+       └─► GEMINI_API_KEY, HOST, PORT, etc.
+
+    2. Initialize logging system
+       └─► setup_run_logging()
+       └─► Create log files for this run
+
+    3. FastAPI lifespan (startup)
+       ├─► Validate Gemini API key
+       ├─► Load embedding model
+       │   └─► Check cache first
+       │   └─► Download if needed (first time)
+       │   └─► Load to GPU/CPU
+       └─► Ready to accept requests
+
+    4. Web UI loads
+       ├─► Check health status
+       ├─► Load document list
+       └─► Load chat history (if session exists)
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         KEY TECHNOLOGIES                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    • LangGraph: Pipeline orchestration
+    • LangChain: LLM/Embedding integrations
+    • FastAPI: REST API server
+    • Uvicorn: ASGI server
+    • FAISS: Vector similarity search
+    • Sentence-Transformers: Embedding model
+    • Gemini API: LLM generation
+    • PyTorch: Deep learning framework
+    • CUDA: GPU acceleration
+
+
+================================================================================
+                              END OF FLOW DIAGRAM
+================================================================================
+

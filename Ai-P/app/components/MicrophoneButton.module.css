@@ -1,0 +1,116 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-lg);
+    z-index: var(--z-mic-button);
+}
+
+.micButton {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid var(--accent-secondary);
+    background: radial-gradient(circle, var(--bg-secondary), var(--bg-primary));
+    box-shadow: var(--shadow-sm);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    transition: all var(--transition-fast);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.icon {
+    width: 32px;
+    height: 32px;
+    color: var(--text-primary);
+    transition: color var(--transition-fast);
+}
+
+.micButton:hover:not(.disabled) {
+    border-color: var(--accent-hover);
+    box-shadow: var(--shadow-md);
+    transform: scale(1.05);
+}
+
+.micButton:active:not(.disabled) {
+    transform: scale(0.95);
+}
+
+.micButton.recording {
+    background: var(--accent-secondary);
+    border: 3px solid var(--accent-success);
+    box-shadow: var(--shadow-glow);
+    animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.micButton.recording .icon {
+    color: var(--bg-primary);
+}
+
+.micButton.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: var(--text-muted);
+}
+
+.micButton.error {
+    border-color: var(--accent-error);
+    animation: shake 300ms ease-in-out;
+}
+
+.statusText {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--accent-success);
+    animation: fadeIn 200ms ease-out;
+    text-align: center;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-10px);
+    }
+
+    75% {
+        transform: translateX(10px);
+    }
+}
+
+/* Tablet Layout */
+@media (max-width: 1023px) {
+    .micButton {
+        width: 70px;
+        height: 70px;
+    }
+
+    .icon {
+        width: 28px;
+        height: 28px;
+    }
+}
+
+/* Mobile Layout */
+@media (max-width: 767px) {
+    .micButton {
+        width: 80px;
+        height: 80px;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .icon {
+        width: 32px;
+        height: 32px;
+    }
+}

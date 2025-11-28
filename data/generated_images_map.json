@@ -1,0 +1,132 @@
+{
+  "generated_at": 1764070231.4962738,
+  "image_base_dir": "data",
+  "entries": [
+    {
+      "code": "Hawabay/07/B/7",
+      "safe_code": "Hawabay_07_B_7",
+      "image": "data/generated_images/Hawabay_07_B_7.png"
+    },
+    {
+      "code": "Hawabay/06/M/302",
+      "safe_code": "Hawabay_06_M_302",
+      "image": "data/generated_images/Hawabay_06_M_302.png"
+    },
+    {
+      "code": "Hawabay/05/M/303",
+      "safe_code": "Hawabay_05_M_303",
+      "image": "data/generated_images/Hawabay_05_M_303.png"
+    },
+    {
+      "code": "Hawabay/02/L/101",
+      "safe_code": "Hawabay_02_L_101",
+      "image": "data/generated_images/Hawabay_02_L_101.png"
+    },
+    {
+      "code": "Hawabay/06/E/1",
+      "safe_code": "Hawabay_06_E_1",
+      "image": "data/generated_images/Hawabay_06_E_1.png"
+    },
+    {
+      "code": "Hawabay/06/M/303",
+      "safe_code": "Hawabay_06_M_303",
+      "image": "data/generated_images/Hawabay_06_M_303.png"
+    },
+    {
+      "code": "Hawabay/23/G/1",
+      "safe_code": "Hawabay_23_G_1",
+      "image": "data/generated_images/Hawabay_23_G_1.png"
+    },
+    {
+      "code": "Hawabay/05/M/102",
+      "safe_code": "Hawabay_05_M_102",
+      "image": "data/generated_images/Hawabay_05_M_102.png"
+    },
+    {
+      "code": "Hawabay/07/E/1",
+      "safe_code": "Hawabay_07_E_1",
+      "image": "data/generated_images/Hawabay_07_E_1.png"
+    },
+    {
+      "code": "Hawabay/27/I/202",
+      "safe_code": "Hawabay_27_I_202",
+      "image": "data/generated_images/Hawabay_27_I_202.png"
+    },
+    {
+      "code": "Hawabay/02/L/304",
+      "safe_code": "Hawabay_02_L_304",
+      "image": "data/generated_images/Hawabay_02_L_304.png"
+    },
+    {
+      "code": "Hawabay/06/B/6",
+      "safe_code": "Hawabay_06_B_6",
+      "image": "data/generated_images/Hawabay_06_B_6.png"
+    },
+    {
+      "code": "Hawabay/26/G/201",
+      "safe_code": "Hawabay_26_G_201",
+      "image": "data/generated_images/Hawabay_26_G_201.png"
+    },
+    {
+      "code": "Hawabay/05/M/3",
+      "safe_code": "Hawabay_05_M_3",
+      "image": "data/generated_images/Hawabay_05_M_3.png"
+    },
+    {
+      "code": "Hawabay/01/D/2",
+      "safe_code": "Hawabay_01_D_2",
+      "image": "data/generated_images/Hawabay_01_D_2.png"
+    },
+    {
+      "code": "Hawabay/02/L/1",
+      "safe_code": "Hawabay_02_L_1",
+      "image": "data/generated_images/Hawabay_02_L_1.png"
+    },
+    {
+      "code": "Hawabay/05/M/301",
+      "safe_code": "Hawabay_05_M_301",
+      "image": "data/generated_images/Hawabay_05_M_301.png"
+    },
+    {
+      "code": "Hawabay/05/E/2",
+      "safe_code": "Hawabay_05_E_2",
+      "image": "data/generated_images/Hawabay_05_E_2.png"
+    },
+    {
+      "code": "Hawabay/27/I/203",
+      "safe_code": "Hawabay_27_I_203",
+      "image": "data/generated_images/Hawabay_27_I_203.png"
+    },
+    {
+      "code": "Hawabay/26/G/102",
+      "safe_code": "Hawabay_26_G_102",
+      "image": "data/generated_images/Hawabay_26_G_102.png"
+    },
+    {
+      "code": "Hawabay/02/L/204",
+      "safe_code": "Hawabay_02_L_204",
+      "image": "data/generated_images/Hawabay_02_L_204.png"
+    },
+    {
+      "code": "Hawabay/04/E/1",
+      "safe_code": "Hawabay_04_E_1",
+      "image": "data/generated_images/Hawabay_04_E_1.png"
+    },
+    {
+      "code": "Hawabay/05/B/5",
+      "safe_code": "Hawabay_05_B_5",
+      "image": "data/generated_images/Hawabay_05_B_5.png"
+    },
+    {
+      "code": "Hawabay/02/D/1",
+      "safe_code": "Hawabay_02_D_1",
+      "image": "data/generated_images/Hawabay_02_D_1.png"
+    },
+    {
+      "code": "Hawabay/02/L/301",
+      "safe_code": "Hawabay_02_L_301",
+      "image": "data/generated_images/Hawabay_02_L_301.png"
+    }
+  ],
+  "missing": []
+}

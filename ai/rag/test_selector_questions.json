@@ -1,0 +1,101 @@
+{
+  "test_questions": [
+    {
+      "id": 1,
+      "question": "عايز شقة بمساحة 150 متر وأقل من 6 مليون",
+      "expected_filters": ["Area == 150", "Price < 6000000"],
+      "description": "Filter apartments with 150m² area and price less than 6M"
+    },
+    {
+      "id": 2,
+      "question": "عايز فيلا بحديقة كبيرة أكتر من 200 متر",
+      "expected_filters": ["Usage == 'Villa'", "Garden > 200"],
+      "description": "Filter villas with garden larger than 200m²"
+    },
+    {
+      "id": 3,
+      "question": "عايز شقة في الدور الأرضي بحديقة",
+      "expected_filters": ["Floor == 'Gr'", "Garden > 0"],
+      "description": "Filter ground floor apartments with garden"
+    },
+    {
+      "id": 4,
+      "question": "عايز شقة سعرها بين 5 مليون و 7 مليون",
+      "expected_filters": ["Price >= 5000000", "Price <= 7000000"],
+      "description": "Filter apartments with price between 5M and 7M"
+    },
+    {
+      "id": 5,
+      "question": "عايز فيلا أو جاردن فيلا بمساحة أكتر من 300 متر",
+      "expected_filters": ["Usage in ['Villa', 'Garden Villa']", "Area > 300"],
+      "description": "Filter villas or garden villas with area > 300m²"
+    },
+    {
+      "id": 6,
+      "question": "عايز شقة في مبنى 02/L",
+      "expected_filters": ["Building == '02/L'"],
+      "description": "Filter apartments in building 02/L"
+    },
+    {
+      "id": 7,
+      "question": "عايز شقة في الدور الثالث",
+      "expected_filters": ["Floor == '3rd'"],
+      "description": "Filter apartments on 3rd floor"
+    },
+    {
+      "id": 8,
+      "question": "عايز أرخص شقة متاحة",
+      "expected_filters": ["sort by Price ascending"],
+      "description": "Get cheapest apartment available"
+    },
+    {
+      "id": 9,
+      "question": "عايز شقة بمساحة صغيرة أقل من 140 متر",
+      "expected_filters": ["Area < 140"],
+      "description": "Filter apartments with area less than 140m²"
+    },
+    {
+      "id": 10,
+      "question": "عايز فيلا بروف أكتر من 90 متر",
+      "expected_filters": ["Usage == 'Villa'", "Roof > 90"],
+      "description": "Filter villas with roof area > 90m²"
+    },
+    {
+      "id": 11,
+      "question": "عايز شقة في الدور الأول أو الثاني",
+      "expected_filters": ["Floor in ['1st', '2nd']"],
+      "description": "Filter apartments on 1st or 2nd floor"
+    },
+    {
+      "id": 12,
+      "question": "عايز أغلى وحدة متاحة",
+      "expected_filters": ["sort by Price descending"],
+      "description": "Get most expensive unit available"
+    },
+    {
+      "id": 13,
+      "question": "عايز شقة بمساحة كبيرة أكتر من 180 متر",
+      "expected_filters": ["Area > 180"],
+      "description": "Filter apartments with area > 180m²"
+    },
+    {
+      "id": 14,
+      "question": "عايز سكاي فيلا بمساحة بين 240 و 300 متر",
+      "expected_filters": ["Usage == 'Sky Villa'", "Area >= 240", "Area <= 300"],
+      "description": "Filter sky villas with area between 240-300m²"
+    },
+    {
+      "id": 15,
+      "question": "عايز شقة بحديقة صغيرة أقل من 70 متر",
+      "expected_filters": ["Garden > 0", "Garden < 70"],
+      "description": "Filter apartments with small garden < 70m²"
+    }
+  ],
+  "metadata": {
+    "csv_path": "data/11-15_sample25.csv",
+    "total_questions": 15,
+    "language": "Egyptian Arabic",
+    "domain": "Real Estate Unit Selection"
+  }
+}
+

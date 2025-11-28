@@ -1,0 +1,3 @@
+# Test dependencies
+websockets==12.0
+

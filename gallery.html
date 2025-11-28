@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Real Estate Listings Gallery</title>
+  <style>
+    :root {
+      color-scheme: dark light;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f4f4f4;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    #gallery {
+      width: 90%;
+      max-width: 900px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    #image-container {
+      position: relative;
+      width: 100%;
+      background: #000;
+    }
+
+    #image-container img {
+      width: 100%;
+      height: 500px;
+      object-fit: contain;
+      background: #000;
+    }
+
+    #controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #1f2937;
+      color: #fff;
+    }
+
+    #controls button {
+      padding: 10px 20px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    #controls button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+
+    #delete-btn {
+      background: #dc2626;
+    }
+
+    #delete-btn:disabled {
+      background: #7f1d1d;
+    }
+
+    #info {
+      padding: 20px;
+      background: #fff;
+    }
+
+    #info h2 {
+      margin-top: 0;
+    }
+
+    #description-card {
+      margin-top: 10px;
+      padding: 14px;
+      border-radius: 10px;
+      background: #ede9fe;
+      color: #312e81;
+      font-weight: 500;
+      line-height: 1.6;
+    }
+
+    #metadata {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .meta-card {
+      background: #f9fafb;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .meta-card strong {
+      display: block;
+      color: #2563eb;
+    }
+
+    #progress {
+      font-size: 14px;
+    }
+
+    #confirm-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    #confirm-modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #1e1b4b;
+      color: #f5f3ff;
+      padding: 24px;
+      border-radius: 16px;
+      width: min(420px, 90vw);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+
+    .modal-content h3 {
+      margin: 0 0 8px;
+      font-size: 1.3rem;
+    }
+
+    .modal-message {
+      font-weight: 500;
+      margin-bottom: 18px;
+      color: #c4b5fd;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: transform 0.1s ease, opacity 0.1s ease;
+    }
+
+    .modal-actions button:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    .modal-cancel {
+      background: #312e81;
+      color: #f5f3ff;
+    }
+
+    .modal-confirm {
+      background: #dc2626;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <h1>Real Estate Listings Gallery</h1>
+  <p>Browse the sample listings and view their details.</p>
+
+  <div id="gallery">
+    <div id="image-container">
+      <img id="listing-image" src="" alt="Listing image">
+    </div>
+    <div id="controls">
+      <button id="prev-btn">Previous</button>
+      <span id="progress">0 / 0</span>
+      <button id="next-btn">Next</button>
+      <button id="delete-btn">Delete</button>
+    </div>
+    <div id="info">
+      <h2 id="listing-title"></h2>
+      <div id="description-card"></div>
+      <div id="metadata"></div>
+    </div>
+  </div>
+
+  <div id="confirm-modal">
+    <div class="modal-content">
+      <h3>Delete listing?</h3>
+      <p class="modal-message" id="modal-message"></p>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="modal-cancel-btn">Cancel</button>
+        <button class="modal-confirm" id="modal-confirm-btn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const imageElement = document.getElementById('listing-image');
+    const titleElement = document.getElementById('listing-title');
+    const descriptionCard = document.getElementById('description-card');
+    const metadataElement = document.getElementById('metadata');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const deleteBtn = document.getElementById('delete-btn');
+    const progressElement = document.getElementById('progress');
+    const confirmModal = document.getElementById('confirm-modal');
+    const modalMessage = document.getElementById('modal-message');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+
+    let listings = [];
+    let currentIndex = 0;
+
+    async function loadData() {
+      try {
+        const response = await fetch('image_mapping.json');
+        const data = await response.json();
+
+        listings = Object.entries(data)
+          .filter(([, value]) => value.image_exists)
+          .map(([path, value]) => ({
+            path,
+            ...value
+          }));
+
+        if (listings.length === 0) {
+          titleElement.textContent = 'No images found';
+          imageElement.alt = 'No image available';
+          return;
+        }
+
+        updateView();
+      } catch (error) {
+        console.error('Error loading data:', error);
+        titleElement.textContent = 'Failed to load data.';
+      }
+    }
+
+    function updateView() {
+      const current = listings[currentIndex];
+      const listing = current.listing;
+
+      imageElement.src = current.path;
+      imageElement.alt = listing.title || 'Listing image';
+
+      titleElement.textContent = listing.title || 'Untitled Listing';
+      descriptionCard.textContent = listing.description || 'لا يوجد وصف متاح حالياً.';
+
+      metadataElement.innerHTML = `
+        <div class="meta-card">
+          <strong>Price</strong>
+          ${listing.price || 'N/A'}
+        </div>
+        <div class="meta-card">
+          <strong>Location</strong>
+          ${listing.location || 'N/A'}
+        </div>
+        <div class="meta-card">
+          <strong>Category</strong>
+          ${listing.category ? listing.category.join(', ') : 'N/A'}
+        </div>
+        <div class="meta-card">
+          <strong>Source</strong>
+          ${listing.source_name || 'Unknown'}
+        </div>
+        <div class="meta-card">
+          <strong>Scraped At</strong>
+          ${listing.scraped_at || 'N/A'}
+        </div>
+        <div class="meta-card">
+          <strong>Matched Keywords</strong>
+          ${(listing.matched_keywords && listing.matched_keywords.length > 0) ? listing.matched_keywords.join(', ') : 'None'}
+        </div>
+      `;
+
+      progressElement.textContent = `${currentIndex + 1} / ${listings.length}`;
+      prevBtn.disabled = currentIndex === 0;
+      nextBtn.disabled = currentIndex === listings.length - 1;
+      deleteBtn.disabled = listings.length === 0;
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentIndex > 0) {
+        currentIndex--;
+        updateView();
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentIndex < listings.length - 1) {
+        currentIndex++;
+        updateView();
+      }
+    });
+
+    async function deleteCurrentListing() {
+      if (listings.length === 0) {
+        return;
+      }
+      const current = listings[currentIndex];
+      const listingTitle = current.listing.title || current.path;
+      const confirmed = await showConfirmModal(listingTitle);
+      if (!confirmed) {
+        return;
+      }
+
+      deleteBtn.disabled = true;
+      deleteBtn.textContent = 'Deleting...';
+
+      try {
+        const response = await fetch('/api/delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ path: current.path })
+        });
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || 'Failed to delete');
+        }
+
+        listings.splice(currentIndex, 1);
+        if (currentIndex >= listings.length) {
+          currentIndex = listings.length - 1;
+        }
+        if (listings.length === 0) {
+          imageElement.src = '';
+          titleElement.textContent = 'No listings available';
+          descriptionCard.textContent = '';
+          metadataElement.innerHTML = '';
+          progressElement.textContent = '0 / 0';
+        } else {
+          updateView();
+        }
+      } catch (error) {
+        alert(`Delete failed: ${error.message}`);
+      } finally {
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.disabled = listings.length === 0;
+      }
+    }
+
+    function showConfirmModal(title) {
+      return new Promise((resolve) => {
+        confirmModal.classList.add('active');
+        modalMessage.textContent = title;
+
+        function cleanup(result) {
+          confirmModal.classList.remove('active');
+          modalCancelBtn.removeEventListener('click', onCancel);
+          modalConfirmBtn.removeEventListener('click', onConfirm);
+          resolve(result);
+        }
+
+        function onCancel() {
+          cleanup(false);
+        }
+
+        function onConfirm() {
+          cleanup(true);
+        }
+
+        modalCancelBtn.addEventListener('click', onCancel);
+        modalConfirmBtn.addEventListener('click', onConfirm);
+      });
+    }
+
+    deleteBtn.addEventListener('click', deleteCurrentListing);
+
+    loadData();
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,298 @@
+.page {
+    min-height: 100vh;
+    width: 100vw;
+    position: relative;
+}
+
+.main {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(24px, 4vw, 56px);
+    align-items: center;
+    justify-content: center;
+    padding: 100px clamp(16px, 6vw, 80px) var(--spacing-xxl);
+    position: relative;
+}
+
+.mainWithPanel {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(280px, 1fr);
+    align-items: stretch;
+    gap: clamp(24px, 4vw, 56px);
+}
+
+.interactionArea {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 220px);
+}
+
+.interactionAreaWithPanel {
+    align-items: flex-start;
+}
+
+.blobContainer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 2rem 0;
+    overflow: visible;
+    width: 100%;
+}
+
+.blobShifted {
+    align-items: flex-start;
+    margin-left: clamp(16px, 3vw, 60px);
+    max-width: 760px;
+}
+
+.statusMessage {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.statusShifted {
+    justify-content: flex-start;
+    padding-left: 0;
+    width: 100%;
+    text-align: left;
+}
+
+.statusText {
+    color: var(--text-secondary);
+    animation: statusFade 400ms var(--transition-medium);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    letter-spacing: 0.4px;
+    transform-origin: center;
+}
+
+.statusText::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    box-shadow: 0 0 12px currentColor;
+    animation: pulse 1.2s infinite;
+}
+
+.status-silent {
+    color: var(--text-secondary);
+}
+
+.status-listening {
+    color: var(--accent-success);
+}
+
+.status-thinking {
+    color: var(--accent-warning);
+}
+
+.status-speaking {
+    color: var(--accent-primary);
+}
+
+.micContainer {
+    margin-top: var(--spacing-xxl);
+    margin-bottom: var(--spacing-lg);
+}
+
+.micShifted {
+    align-self: flex-start;
+    margin-left: clamp(16px, 3vw, 60px);
+}
+
+.panelWrapper {
+    width: 100%;
+    max-width: 520px;
+    position: relative;
+}
+
+.permissionBanner {
+    position: relative;
+    margin: 0 auto;
+    margin-top: 160px;
+    width: min(640px, 90vw);
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    z-index: var(--z-slide-bar);
+}
+
+.permissionTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.permissionDescription {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.permissionButton {
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--gradient-primary);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+    white-space: nowrap;
+}
+
+.permissionButton:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(99, 102, 241, 0.5);
+}
+
+.permissionError {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: #f87171;
+}
+
+/* Tablet Layout */
+@media (max-width: 1023px) {
+    .main {
+        padding-top: 80px;
+        justify-content: flex-start;
+    }
+
+    .mainWithPanel {
+        grid-template-columns: 1fr 1fr;
+        align-items: flex-start;
+    }
+
+    .panelWrapper {
+        max-width: none;
+    }
+
+    .blobContainer {
+        margin-top: var(--spacing-lg);
+    }
+
+    .blobShifted {
+        align-items: center;
+        margin-left: 0;
+    }
+
+    .statusShifted {
+        justify-content: center;
+    }
+
+    .micShifted {
+        align-self: center;
+        margin-left: 0;
+    }
+
+    .micContainer {
+        margin-top: var(--spacing-lg);
+    }
+
+    .permissionBanner {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-top: 120px;
+    }
+
+    .permissionButton {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .statusText {
+        animation: none;
+    }
+
+    .statusText::before {
+        animation: none;
+    }
+}
+
+/* Mobile Layout */
+@media (max-width: 767px) {
+    .main {
+        padding-top: 70px;
+    }
+
+    .mainWithPanel {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-lg);
+    }
+
+    .micContainer {
+        margin-top: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .panelWrapper {
+        order: 1;
+        width: 100%;
+    }
+
+    .interactionArea {
+        order: 2;
+        align-items: center;
+    }
+
+    .blobContainer {
+        margin-top: var(--spacing-md);
+    }
+
+    .blobShifted {
+        align-items: center;
+        margin-left: 0;
+    }
+
+    .statusShifted {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .micShifted {
+        align-self: center;
+        margin-left: 0;
+    }
+}
+
+@keyframes statusFade {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.96);
+        filter: blur(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}

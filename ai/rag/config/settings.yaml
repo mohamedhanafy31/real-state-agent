@@ -1,0 +1,59 @@
+# RAG System Configuration
+
+# Embedding Model Configuration
+embedding:
+  model_name: "mohamed2811/Muffakir_Embedding_V2"  # Sentence-transformers model for Arabic
+  device: "cuda"  # "cuda" or "cpu", auto-detect if null
+  batch_size: 32
+  use_sentence_transformers: true  # Use sentence-transformers library (recommended for sentence-transformers models)
+
+# Chunking Configuration
+chunking:
+  min_chunk_size: 100
+  max_chunk_size: 1000
+  overlap: 50
+
+# Vector Store Configuration
+vector_store:
+  type: "faiss"  # "faiss" or "chroma"
+  index_type: "flat"  # "flat" or "ivf" for FAISS
+  embedding_dim: null  # Auto-determined from model
+
+# Retrieval Configuration
+retrieval:
+  k: 5  # Number of chunks to retrieve
+
+# LLM Generator Configuration
+generator:
+  provider: "gemini"  # "gemini" or other providers
+  model_name: "gemini-2.0-flash"  # Updated model name (gemini-pro and gemini-1.5-flash are deprecated)
+  api_key: null  # Set via GEMINI_API_KEY env var
+  temperature: 0.7
+  max_tokens: null
+  disable_thinking: true  # Disable thinking/reasoning steps in responses
+
+# Chat Memory Configuration
+memory:
+  type: "buffer_window"  # "buffer_window", "summary", "entity", etc.
+  max_messages: 20  # Maximum messages to keep per session
+  enabled: true  # Enable/disable conversation memory
+
+# Text Cleaning Configuration
+cleaning:
+  remove_diacritics: true
+  normalize_egyptian: true
+  remove_tatweel: true
+
+# Data Paths
+paths:
+  raw_data: "data/raw"
+  processed_data: "data/processed"
+  embeddings: "data/embeddings"
+  index: "data/embeddings/index.faiss"
+  chunks: "data/embeddings/chunks.pkl"
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_file: null  # Optional log file path
+

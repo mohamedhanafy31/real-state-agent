@@ -1,0 +1,558 @@
+{
+  "images_full/02b2363e-3b32-40d4-b7de-0d8e6f30405c.webp": {
+    "listing": {
+      "id": "02b2363e-3b32-40d4-b7de-0d8e6f30405c",
+      "title": "Own Apartment for only 250K in Mountain View ICity",
+      "category": [
+        "apartment"
+      ],
+      "matched_keywords": [
+        "apartment"
+      ],
+      "price": "10,300,000 EGP",
+      "location": "Mountain View iCity, 5th Settlement Compounds, The 5th Settlement, New Cairo City, Cairo",
+      "description": "شقة مشرقة داخل كمباوند ماونتن فيو آي سيتي بمساحة مريحة وصالة مفتوحة على شرفات زجاجية، مناسبة لعائلة صغيرة تبحث عن خصوصية وخدمات الكمباوند المتكاملة.",
+      "image": "https://www.propertyfinder.eg/property/18b3ccedc48b334f7e80ad5a35fffcc9/416/272/MODE/b0ff98/8305830-50340o.webp?ctr=eg",
+      "source_name": "PropertyFinder Egypt",
+      "source_url": "https://www.propertyfinder.eg/en/search?c=1&page=1",
+      "scraped_at": "2025-11-23T23:47:34.111095+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://www.propertyfinder.eg/property/18b3ccedc48b334f7e80ad5a35fffcc9/416/272/MODE/b0ff98/8305830-50340o.webp?ctr=eg",
+    "image_filename": "02b2363e-3b32-40d4-b7de-0d8e6f30405c.webp"
+  },
+  "images_full/238211a4-7eff-4844-93df-f65f43498f79.jpg": {
+    "listing": {
+      "id": "238211a4-7eff-4844-93df-f65f43498f79",
+      "title": "مكتب اداري للايجار 200متر في المعادي",
+      "category": [
+        "commercial"
+      ],
+      "matched_keywords": [
+        "مكتب"
+      ],
+      "price": "80,000\n    EGP",
+      "location": "Greater Cairo  /  Street 263",
+      "description": "مكتب إداري بمساحة 200 متر في شارع 263 بالمعادي، أرضيات سيراميك وشبكة كهرباء جاهزة، تقسيم مفتوح يسهل تخصيصه لفرق العمل مع إمكانية تجهيز استقبال وقاعات اجتماعات.",
+      "image": "https://img-4.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691e0e63cda8c499977709.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111169+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-4.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691e0e63cda8c499977709.jpg",
+    "image_filename": "238211a4-7eff-4844-93df-f65f43498f79.jpg"
+  },
+  "images_full/ff3745c1-7284-445e-9808-25e92951fbbb.jpg": {
+    "listing": {
+      "id": "ff3745c1-7284-445e-9808-25e92951fbbb",
+      "title": "Apartment  For sale in Al Mashtal St.",
+      "category": [
+        "apartment"
+      ],
+      "matched_keywords": [
+        "apartment"
+      ],
+      "price": "7,100,000\n    EGP",
+      "location": "Greater Cairo  /  Al Mashtal St.",
+      "description": "شقة على شارع المشاط تتميز بنوافذ واسعة تطل على شارع هادئ، فراغ استقبال مستطيل يسهل تأثيثه، مثالية للسكن العائلي بالقرب من الخدمات الحيوية في المعادي.",
+      "image": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f51b7c3942144530575.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111188+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f51b7c3942144530575.jpg",
+    "image_filename": "ff3745c1-7284-445e-9808-25e92951fbbb.jpg"
+  },
+  "images_full/2a8175df-e4cf-470d-9c05-045bde0d6b37.jpg": {
+    "listing": {
+      "id": "2a8175df-e4cf-470d-9c05-045bde0d6b37",
+      "title": "Apartment  For sale in Abdul Rahman Al - Rafie St.",
+      "category": [
+        "apartment"
+      ],
+      "matched_keywords": [
+        "apartment"
+      ],
+      "price": "4,845,000\n    EGP",
+      "location": "Greater Cairo  /  Abdul Rahman Al - Rafie St.",
+      "description": "شقة في شارع عبد الرحمن الرافعي بحجم متوسط، استقبال مفتوح وغرف نوم بفتحات تهوية طبيعية، تصلح للسكن أو الاستثمار طويل الأجل.",
+      "image": "https://img-1.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/6911f964a26cd400765026.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=2",
+      "scraped_at": "2025-11-23T23:47:34.111207+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-1.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/6911f964a26cd400765026.jpg",
+    "image_filename": "2a8175df-e4cf-470d-9c05-045bde0d6b37.jpg"
+  },
+  "images_full/946b311b-9140-4d65-aac4-32342862b791.jpg": {
+    "listing": {
+      "id": "946b311b-9140-4d65-aac4-32342862b791",
+      "title": "Apartment For sale in Maadi Dunes Compound - Alhejaz",
+      "category": [
+        "apartment",
+        "residential_complex"
+      ],
+      "matched_keywords": [
+        "compound",
+        "apartment"
+      ],
+      "price": "4,500,000\n    EGP",
+      "location": "Greater Cairo  /  Maadi Dunes Compound - Alhejaz",
+      "description": "شقة داخل كمباوند معادي دونز بتشطيب حديث، تراس يطل على مساحات خضراء ونظام أمن متكامل داخل الكمباوند.",
+      "image": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f3b599e615004053552.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111225+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f3b599e615004053552.jpg",
+    "image_filename": "946b311b-9140-4d65-aac4-32342862b791.jpg"
+  },
+  "images_full/b4b502f3-4ce3-43e9-b5b0-760e8180ec40.webp": {
+    "listing": {
+      "id": "b4b502f3-4ce3-43e9-b5b0-760e8180ec40",
+      "title": "Best price for Stanalone villa - Mountain View 1.1",
+      "category": [
+        "villa"
+      ],
+      "matched_keywords": [
+        "villa"
+      ],
+      "price": "30,250,000 EGP",
+      "location": "Mountain View 1.1, 5th Settlement Compounds, The 5th Settlement, New Cairo City, Cairo",
+      "description": "فيلا مستقلة في ماونتن فيو 1.1 بحديقة خاصة ومساحات متعددة للاستقبال العائلي، تصميم كلاسيكي مع واجهة حجرية ومساحات زجاجية واسعة.",
+      "image": "https://www.propertyfinder.eg/property/b0f25ac314606c9f0196e1896501413d/416/272/MODE/f2cec7/8223073-663f3o.webp?ctr=eg",
+      "source_name": "PropertyFinder Egypt",
+      "source_url": "https://www.propertyfinder.eg/en/search?c=1&page=1",
+      "scraped_at": "2025-11-23T23:47:34.111244+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://www.propertyfinder.eg/property/b0f25ac314606c9f0196e1896501413d/416/272/MODE/f2cec7/8223073-663f3o.webp?ctr=eg",
+    "image_filename": "b4b502f3-4ce3-43e9-b5b0-760e8180ec40.webp"
+  },
+  "images_full/02362f1b-8775-4422-bd5d-b3121411d1ad.jpg": {
+    "listing": {
+      "id": "02362f1b-8775-4422-bd5d-b3121411d1ad",
+      "title": "For rent shop suitable for a carpet showroom,with Ac's District 16, Sheikh Zayed",
+      "category": [
+        "commercial"
+      ],
+      "matched_keywords": [
+        "showroom",
+        "shop"
+      ],
+      "price": "45,000\n    EGP",
+      "location": "Greater Cairo  /  Sixteenth Neighborhood",
+      "description": "محل تجاري مجهز لعرض السجاد في الحي السادس عشر بالشيخ زايد، واجهة زجاجية كاملة ومساحة عرض مستطيلة تسمح بتوزيع الرفوف والقطع الكبيرة، مزود بتكييفات عاملة.",
+      "image": "https://img-1.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2510/68f79e5900172545843574.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111266+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-1.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2510/68f79e5900172545843574.jpg",
+    "image_filename": "02362f1b-8775-4422-bd5d-b3121411d1ad.jpg"
+  },
+  "images_full/7ab32a70-f2ce-4a79-bae9-ee7e69535cae.jpeg": {
+    "listing": {
+      "id": "7ab32a70-f2ce-4a79-bae9-ee7e69535cae",
+      "title": "Seafront Luxury Palace for Sale in Palm Beach Resort – From Owner",
+      "category": [
+        "residential_complex",
+        "hotel"
+      ],
+      "matched_keywords": [
+        "resort"
+      ],
+      "price": "70,000,000\n    EGP",
+      "location": "North Coast  /  Palm Beach Resort - The Arab Contractors",
+      "description": "قصر فاخر مطل على البحر بمنتجع بالم بيتش، مسطحات زجاجية تعكس البحر وحدائق مشجرة، مناسب لعشاق الفخامة والاستجمام الخاص.",
+      "image": "https://img-2.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/6921d294e0b11465508212.jpeg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111312+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-2.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/6921d294e0b11465508212.jpeg",
+    "image_filename": "7ab32a70-f2ce-4a79-bae9-ee7e69535cae.jpeg"
+  },
+  "images_full/0557f372-272e-484a-9874-458d03a79a08.jpg": {
+    "listing": {
+      "id": "0557f372-272e-484a-9874-458d03a79a08",
+      "title": "مكتب اداري للايجار 300 متر في المعادي",
+      "category": [
+        "commercial"
+      ],
+      "matched_keywords": [
+        "مكتب"
+      ],
+      "price": "60,000\n    EGP",
+      "location": "Greater Cairo  /  El Nasr St",
+      "description": "مكتب إداري 300 متر في المعادي بتقسيم داخلي لغرف اجتماعات ومكاتب مغلقة، أرضيات خشبية وتكييف مركزي جاهز للتشغيل.",
+      "image": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691e112990191658059222.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111335+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691e112990191658059222.jpg",
+    "image_filename": "0557f372-272e-484a-9874-458d03a79a08.jpg"
+  },
+  "images_full/4e82397a-53aa-46d5-9780-bd2867a6d6ad.jpg": {
+    "listing": {
+      "id": "4e82397a-53aa-46d5-9780-bd2867a6d6ad",
+      "title": "Apartment For rent in El Merag El Elwy",
+      "category": [
+        "apartment"
+      ],
+      "matched_keywords": [
+        "apartment"
+      ],
+      "price": "19,000\n    EGP",
+      "location": "Greater Cairo  /  El Merag El Elwy",
+      "description": "شقة للإيجار في الميراج العلوي، تتكون من ريسبشن واسع يطل على بلكونة وواجهة زجاجية تسمح بدخول الضوء الطبيعي، جاهزة للسكن الفوري.",
+      "image": "https://img-1.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f585047a31905371479.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111347+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-1.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f585047a31905371479.jpg",
+    "image_filename": "4e82397a-53aa-46d5-9780-bd2867a6d6ad.jpg"
+  },
+  "images_full/073794ca-aa56-44d6-8678-873d899f459d.webp": {
+    "listing": {
+      "id": "073794ca-aa56-44d6-8678-873d899f459d",
+      "title": "Fully Finished Chalet + garden in MV Ras El Hekma",
+      "category": [
+        "other"
+      ],
+      "matched_keywords": [],
+      "price": "3,878,000 EGP",
+      "location": "Mountain View, Ras Al Hekma, North Coast",
+      "description": "شاليه متكامل التشطيب في ماونتن فيو رأس الحكمة مع حديقة خاصة، جلسات خارجية ومسار مباشر للمساحات الخضراء والشاطئ.",
+      "image": "https://www.propertyfinder.eg/property/4147842ecb2b1f0b2d5d5bf344bda077/416/272/MODE/81e0c1/8285830-f5a88o.webp?ctr=eg",
+      "source_name": "PropertyFinder Egypt",
+      "source_url": "https://www.propertyfinder.eg/en/search?c=1&page=1",
+      "scraped_at": "2025-11-23T23:47:34.111360+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://www.propertyfinder.eg/property/4147842ecb2b1f0b2d5d5bf344bda077/416/272/MODE/81e0c1/8285830-f5a88o.webp?ctr=eg",
+    "image_filename": "073794ca-aa56-44d6-8678-873d899f459d.webp"
+  },
+  "images_full/ec320549-89de-4f29-a098-2d6ee62bc978.jpeg": {
+    "listing": {
+      "id": "ec320549-89de-4f29-a098-2d6ee62bc978",
+      "title": "روف  For sale in New Narges",
+      "category": [
+        "other"
+      ],
+      "matched_keywords": [],
+      "price": "4,800,000\n    EGP",
+      "location": "Greater Cairo  /  New Narges",
+      "description": "وحدة روف في النرجس الجديدة بسطح مفتوح يمكن تحويله لتراس خارجي أو مساحة حفلات، مع غرفة معيشة داخلية وحمام مستقل.",
+      "image": "https://img-1.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f04abb765b521971932.jpeg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=2",
+      "scraped_at": "2025-11-23T23:47:34.111379+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-1.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f04abb765b521971932.jpeg",
+    "image_filename": "ec320549-89de-4f29-a098-2d6ee62bc978.jpeg"
+  },
+  "images_full/baf79c42-714f-47db-8a35-86ed58a61b14.jpeg": {
+    "listing": {
+      "id": "baf79c42-714f-47db-8a35-86ed58a61b14",
+      "title": "Apartments For sale in Green Revolution",
+      "category": [
+        "apartment"
+      ],
+      "matched_keywords": [
+        "apartment"
+      ],
+      "price": "4,713,000\n    EGP",
+      "location": "Greater Cairo  /  Green Revolution",
+      "description": "شقة في حي الثورة الخضراء بتشطيب حديث، إطلالة مفتوحة على شارع هادئ ومساحات داخلية تسمح بتقسيم صالة وطعام.",
+      "image": "https://img-3.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2510/68ecd27fd566d709614932.jpeg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=2",
+      "scraped_at": "2025-11-23T23:47:34.111408+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-3.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2510/68ecd27fd566d709614932.jpeg",
+    "image_filename": "baf79c42-714f-47db-8a35-86ed58a61b14.jpeg"
+  },
+  "images_full/78f76ec2-d619-4b53-b8fd-155ab0d82abd.jpg": {
+    "listing": {
+      "id": "78f76ec2-d619-4b53-b8fd-155ab0d82abd",
+      "title": "Apartment For sale in Seven Residence Compound - Harby Group",
+      "category": [
+        "apartment",
+        "residential_complex"
+      ],
+      "matched_keywords": [
+        "compound",
+        "apartment"
+      ],
+      "price": "4,230,000\n    EGP",
+      "location": "Greater Cairo  /  Seven Residence Compound - Harby Group",
+      "description": "شقة في كمباوند سيفن ريزيدنس من مجموعة الحربي، واجهات زجاجية مع إطلالة على حدائق الكمباوند، مناسبة للسكن الراقي بالقاهرة الجديدة.",
+      "image": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/69231c7f37411777461266.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=2",
+      "scraped_at": "2025-11-23T23:47:34.111420+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/69231c7f37411777461266.jpg",
+    "image_filename": "78f76ec2-d619-4b53-b8fd-155ab0d82abd.jpg"
+  },
+  "images_full/8665623b-8f09-4250-9356-21cea5e900c9.jpg": {
+    "listing": {
+      "id": "8665623b-8f09-4250-9356-21cea5e900c9",
+      "title": "For rent commercial store suitable for brands only,with Ac's in District 16",
+      "category": [
+        "commercial"
+      ],
+      "matched_keywords": [
+        "store",
+        "commercial"
+      ],
+      "price": "18,000\n    EGP",
+      "location": "Greater Cairo  /  Sixteenth Neighborhood",
+      "description": "محل تجاري للإيجار في الحي السادس عشر، واجهة زجاجية كاملة ومساحة مستطيلة مثالية لعلامة تجارية تحتاج إلى عرض منتجاتها مع تجهيزات تكييف جاهزة.",
+      "image": "https://img-3.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2510/68f79e560fec1918042421.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111432+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-3.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2510/68f79e560fec1918042421.jpg",
+    "image_filename": "8665623b-8f09-4250-9356-21cea5e900c9.jpg"
+  },
+  "images_full/8f3bc55e-87d0-4255-9b1d-3dca16a15d54.jpeg": {
+    "listing": {
+      "id": "8f3bc55e-87d0-4255-9b1d-3dca16a15d54",
+      "title": "شقق للبيع في شارع اخناتون",
+      "category": [
+        "other"
+      ],
+      "matched_keywords": [],
+      "price": "7,200,000\n    EGP",
+      "location": "Greater Cairo  /  Akhnaton St.",
+      "description": "شقة للبيع في شارع أخناتون بمدينة نصر، تمتاز بفراغ استقبال مستطيل وبلكونة مطلة على الشارع الرئيسي، قريبة من المدارس والخدمات.",
+      "image": "https://img-2.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691dec04774f6211343795.jpeg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=2",
+      "scraped_at": "2025-11-23T23:47:34.111444+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-2.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691dec04774f6211343795.jpeg",
+    "image_filename": "8f3bc55e-87d0-4255-9b1d-3dca16a15d54.jpeg"
+  },
+  "images_full/89f2211d-7dc7-4fb7-b92c-c9a89169061e.jpg": {
+    "listing": {
+      "id": "89f2211d-7dc7-4fb7-b92c-c9a89169061e",
+      "title": "Apartment For sale in Street 44",
+      "category": [
+        "apartment"
+      ],
+      "matched_keywords": [
+        "apartment"
+      ],
+      "price": "3,500,000\n    EGP",
+      "location": "Greater Cairo  /  Street 44",
+      "description": "شقة في شارع 44 بمصر الجديدة، دور مرتفع بإطلالة مفتوحة، تصميم داخلي يسمح بفصل مساحة المعيشة عن غرف النوم.",
+      "image": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f3799bacae144584887.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111455+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f3799bacae144584887.jpg",
+    "image_filename": "89f2211d-7dc7-4fb7-b92c-c9a89169061e.jpg"
+  },
+  "images_full/793bba68-c5ad-47d3-b9bb-15f09a194005.jpg": {
+    "listing": {
+      "id": "793bba68-c5ad-47d3-b9bb-15f09a194005",
+      "title": "دوبلكس For sale in Zahraa El Maadi St",
+      "category": [
+        "apartment"
+      ],
+      "matched_keywords": [
+        "دوبلكس"
+      ],
+      "price": "7,000,000\n    EGP",
+      "location": "Greater Cairo  /  Zahraa El Maadi St",
+      "description": "دوبلكس في زهراء المعادي بتوزيع طابقي يوفر خصوصية لغرف النوم، سلم داخلي خشبي ومساحة معيشة واسعة تعطي شعور منزل مستقل.",
+      "image": "https://img-1.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f4be6931ae006862131.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111469+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-1.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f4be6931ae006862131.jpg",
+    "image_filename": "793bba68-c5ad-47d3-b9bb-15f09a194005.jpg"
+  },
+  "images_full/5cbf5e2c-4a1f-4ca1-9f78-e5179026fd81.jpg": {
+    "listing": {
+      "id": "5cbf5e2c-4a1f-4ca1-9f78-e5179026fd81",
+      "title": "Apartment For sale in Eighth Neighborhood",
+      "category": [
+        "apartment"
+      ],
+      "matched_keywords": [
+        "apartment"
+      ],
+      "price": "3,200,000\n    EGP",
+      "location": "Greater Cairo  /  Eighth Neighborhood",
+      "description": "شقة متوسطة المساحة في الحي الثامن بمدينة نصر، استقبال مربع يسهل فرشه وغرف نوم بإضاءة طبيعية، مناسبة للسكن العائلي.",
+      "image": "https://img-2.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f3ece4c63c593231344.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111481+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-2.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f3ece4c63c593231344.jpg",
+    "image_filename": "5cbf5e2c-4a1f-4ca1-9f78-e5179026fd81.jpg"
+  },
+  "images_full/e0381f36-86d6-4ab0-bdd8-1f269077b508.jpg": {
+    "listing": {
+      "id": "e0381f36-86d6-4ab0-bdd8-1f269077b508",
+      "title": "شقة مفروشة  For rent in El Qudah Compound",
+      "category": [
+        "apartment",
+        "residential_complex"
+      ],
+      "matched_keywords": [
+        "compound",
+        "شقة"
+      ],
+      "price": "30,000\n    EGP",
+      "location": "Greater Cairo  /  El Qudah Compound",
+      "description": "شقة مفروشة بالكامل في كمباوند القضاة، أثاث حديث وأجهزة كهربائية عاملة مع بلكونة تطل على حدائق داخلية، جاهزة للسكن الفوري.",
+      "image": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/69230a5473ddc894453355.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=1",
+      "scraped_at": "2025-11-23T23:47:34.111495+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/69230a5473ddc894453355.jpg",
+    "image_filename": "e0381f36-86d6-4ab0-bdd8-1f269077b508.jpg"
+  },
+  "images_full/4e8f8068-6732-4338-a91c-34e3f40ef114.jpg": {
+    "listing": {
+      "id": "4e8f8068-6732-4338-a91c-34e3f40ef114",
+      "title": "Apartment  For sale in Abo El Hawl 2",
+      "category": [
+        "apartment"
+      ],
+      "matched_keywords": [
+        "apartment"
+      ],
+      "price": "5,000,000\n    EGP",
+      "location": "Greater Cairo  /  Abo El Hawl 2",
+      "description": "شقة للبيع في منطقة أبو الهول 2 بالمعادي، تصميم مستطيل مع نوافذ كبيرة تسمح بدخول الضوء، منطقة هادئة وقريبة من محور الكورنيش.",
+      "image": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/6911f6554e57b846389195.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=2",
+      "scraped_at": "2025-11-23T23:47:34.111509+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-0.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/6911f6554e57b846389195.jpg",
+    "image_filename": "4e8f8068-6732-4338-a91c-34e3f40ef114.jpg"
+  },
+  "images_full/c6feacc0-ad22-4f3f-8c50-80315ecaef2b.webp": {
+    "listing": {
+      "id": "c6feacc0-ad22-4f3f-8c50-80315ecaef2b",
+      "title": "IBIZA_BAY A hotel-style directly on the sea.",
+      "category": [
+        "hotel"
+      ],
+      "matched_keywords": [
+        "hotel"
+      ],
+      "price": "4,686,000 EGPDown payment: 700,000 EGP",
+      "location": "Al Ahyaa District, Hurghada, Red Sea",
+      "description": "شقة فندقية في مشروع آيبيزا باي بالغردقة، تشطيب عصري وأثاث فندقي، شرفة تطل على البحر الأحمر وخدمات فندقية كاملة.",
+      "image": "https://www.propertyfinder.eg/property/c888b9c8fe8e9119aa3ad597b9e2f495/416/272/MODE/b6ff1a/8303553-d2680o.webp?ctr=eg",
+      "source_name": "PropertyFinder Egypt",
+      "source_url": "https://www.propertyfinder.eg/en/search?c=1&page=1",
+      "scraped_at": "2025-11-23T23:47:34.111523+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://www.propertyfinder.eg/property/c888b9c8fe8e9119aa3ad597b9e2f495/416/272/MODE/b6ff1a/8303553-d2680o.webp?ctr=eg",
+    "image_filename": "c6feacc0-ad22-4f3f-8c50-80315ecaef2b.webp"
+  },
+  "images_full/0ef953b5-9941-4a3c-8301-d952750b08a2.webp": {
+    "listing": {
+      "id": "0ef953b5-9941-4a3c-8301-d952750b08a2",
+      "title": "Own standalone villa191m Directly on the Suez Road",
+      "category": [
+        "villa"
+      ],
+      "matched_keywords": [
+        "villa"
+      ],
+      "price": "12,636,000 EGPDown payment: 2,520,000 EGP",
+      "location": "S1, Sarai, Mostakbal City Compounds, Mostakbal City - Future City, Cairo",
+      "description": "فيلا مستقلة على طريق السويس داخل سراي، واجهة حديثة وحديقة أمامية واسعة، مثالية لمن يبحث عن حياة هادئة مع قرب من العاصمة الإدارية.",
+      "image": "https://www.propertyfinder.eg/property/9324fc24be0cb95dbb50edef1d33c82e/416/272/MODE/80469f/8134513-e566co.webp?ctr=eg",
+      "source_name": "PropertyFinder Egypt",
+      "source_url": "https://www.propertyfinder.eg/en/search?c=1&page=1",
+      "scraped_at": "2025-11-23T23:47:34.111534+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://www.propertyfinder.eg/property/9324fc24be0cb95dbb50edef1d33c82e/416/272/MODE/80469f/8134513-e566co.webp?ctr=eg",
+    "image_filename": "0ef953b5-9941-4a3c-8301-d952750b08a2.webp"
+  },
+  "images_full/d46ddbd8-eb45-4314-a2fe-9bb9b5e7f30d.jpg": {
+    "listing": {
+      "id": "d46ddbd8-eb45-4314-a2fe-9bb9b5e7f30d",
+      "title": "Apartment For sale in Makany Compound - El Mansour",
+      "category": [
+        "apartment",
+        "residential_complex"
+      ],
+      "matched_keywords": [
+        "compound",
+        "apartment"
+      ],
+      "price": "3,100,000\n    EGP",
+      "location": "Greater Cairo  /  Makany Compound - El Mansour",
+      "description": "شقة في كمباوند مكاني من المنصور، تصميم وظيفي مع مطبخ منفصل وشرفة تطل على ممرات خضراء، خدمات أمن وصيانة على مدار الساعة.",
+      "image": "https://img-3.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f4975c77ac734990500.jpg",
+      "source_name": "Aqarmap Egypt",
+      "source_url": "https://aqarmap.com.eg/en/for-sale/property/?page=2",
+      "scraped_at": "2025-11-23T23:47:34.111545+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://img-3.aqarmap.com.eg/new-aqarmap-media/search-thumb-webp/2511/691f4975c77ac734990500.jpg",
+    "image_filename": "d46ddbd8-eb45-4314-a2fe-9bb9b5e7f30d.jpg"
+  },
+  "images_full/5e9aa64b-79d3-46ff-b128-64c91177a547.webp": {
+    "listing": {
+      "id": "5e9aa64b-79d3-46ff-b128-64c91177a547",
+      "title": "New Launch By Ora - Townhouse For Sale For Eoi",
+      "category": [
+        "villa"
+      ],
+      "matched_keywords": [
+        "townhouse",
+        "house"
+      ],
+      "price": "35,000,000 EGPDown payment: 1,750,000 EGP",
+      "location": "Zed East, 5th Settlement Compounds, The 5th Settlement, New Cairo City, Cairo",
+      "description": "تاون هاوس جديد في زد إيست من أورا، واجهات زجاجية مع تيراس، مساحات استقبال مزدوجة الارتفاع وحديقة خلفية مهيأة للترفيه العائلي.",
+      "image": "https://www.propertyfinder.eg/property/d6154ad48c410a84f75954bdcab2d116/416/272/MODE/c7d64a/8241720-5a2ceo.webp?ctr=eg",
+      "source_name": "PropertyFinder Egypt",
+      "source_url": "https://www.propertyfinder.eg/en/search?c=1&page=1",
+      "scraped_at": "2025-11-23T23:47:34.111555+00:00"
+    },
+    "image_exists": true,
+    "image_url": "https://www.propertyfinder.eg/property/d6154ad48c410a84f75954bdcab2d116/416/272/MODE/c7d64a/8241720-5a2ceo.webp?ctr=eg",
+    "image_filename": "5e9aa64b-79d3-46ff-b128-64c91177a547.webp"
+  }
+}

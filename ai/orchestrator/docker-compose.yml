@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  orchestrator:
+    build: .
+    ports:
+      - "8040:8040"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ASR_API_URL=${ASR_API_URL:-https://arabic-asr-api-22251281831.us-central1.run.app}
+      - ASR_STREAMING_WS_URL=${ASR_STREAMING_WS_URL:-wss://arabic-asr-api-22251281831.us-central1.run.app/ws/asr-stream}
+      - ASR_STREAMING_CONNECT_TIMEOUT=${ASR_STREAMING_CONNECT_TIMEOUT:-10}
+      - ASR_STREAMING_RESULT_TIMEOUT=${ASR_STREAMING_RESULT_TIMEOUT:-15}
+      - RAG_API_URL=${RAG_API_URL:-http://host.docker.internal:8000}
+      - TTS_API_URL=${TTS_API_URL:-https://arabic-tts-api-22251281831.us-central1.run.app}
+      - HOST=0.0.0.0
+      - PORT=8040
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8040/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  redis_data:
+

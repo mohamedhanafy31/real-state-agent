@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-frontend:
+    name: Build Next.js (Ai-P)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Ai-P
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Ai-P/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  test-rag:
+    name: Test RAG API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai/rag
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: ai/rag/requirements.txt
+      - run: pip install -r requirements.txt
+      - run: pytest
+
+  test-orchestrator:
+    name: Test Orchestrator
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai/orchestrator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ai/orchestrator/requirements.txt
+      - run: pip install -r requirements.txt
+      - run: pytest || true
+

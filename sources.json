@@ -1,0 +1,47 @@
+{
+    "sources": [
+      {
+        "name": "Aqarmap Egypt",
+        "type": "html",
+        "url": "https://aqarmap.com.eg/en/for-sale/property/",
+        "list_item_selector": ".listing-card",
+        "title_selector": "h2.text-body_2",
+        "price_selector": "span.text-title_4",
+        "location_selector": "p.text-caption.text-gray__dark_2.truncated-text",
+        "image_selector": "img.object-cover",
+        "link_selector": "a.p-2x",
+        "description_selector": null
+      },
+      {
+        "name": "PropertyFinder Egypt",
+        "type": "html",
+        "url": "https://www.propertyfinder.eg/en/search?c=1",
+        "list_item_selector": "[class*=\"property-card\"]",
+        "title_selector": "h2, h3",
+        "price_selector": "[class*=\"price\"]",
+        "location_selector": "[class*=\"location\"]",
+        "image_selector": "img",
+        "link_selector": "a[href*=\"/property\"], a[href*=\"/en/\"]",
+        "description_selector": null
+      },
+      {
+        "name": "Example Real Estate API",
+        "type": "api",
+        "api_url": "https://api.example.com/v1/listings",
+        "method": "GET",
+        "results_path": "data.items",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "field_mapping": {
+          "title": "attributes.title",
+          "price": "attributes.price.value",
+          "location": "attributes.location.name",
+          "description": "attributes.description",
+          "image": "attributes.images.0.url",
+          "link": "links.self"
+        }
+      }
+    ]
+  }
+  

@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orchestrator Test Client</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .mode-section {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+
+        .documents-section {
+            grid-column: span 2;
+        }
+
+        .documents-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .doc-list {
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .doc-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+            background: white;
+        }
+
+        .doc-item:last-child {
+            border-bottom: none;
+        }
+
+        .doc-meta {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.9em;
+        }
+
+        .doc-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .doc-details {
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .doc-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .doc-status {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .doc-empty {
+            padding: 20px;
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            background: white;
+        }
+
+        .btn-small {
+            flex: initial;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .doc-upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        .doc-upload-grid .input-group {
+            margin-bottom: 0;
+        }
+
+        .mode-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .connection-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .status-connected {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status-disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .status-connecting {
+            background: #ff9800;
+            color: white;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+
+        .input-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #764ba2;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5d3a7e;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+
+        .output .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+            background: #2d2d2d;
+        }
+
+        .output .message.transcript {
+            border-left-color: #4caf50;
+        }
+
+        .output .message.rag {
+            border-left-color: #2196f3;
+        }
+
+        .output .message.tts {
+            border-left-color: #ff9800;
+        }
+
+        .output .message.error {
+            border-left-color: #f44336;
+            background: #3d1f1f;
+        }
+
+        .output .timestamp {
+            color: #888;
+            font-size: 0.8em;
+            margin-right: 10px;
+        }
+
+        .audio-controls {
+            margin-top: 10px;
+        }
+
+        .audio-controls audio {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .recording-indicator {
+            display: none;
+            color: #f44336;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .recording-indicator.active {
+            display: block;
+        }
+
+        .recording-indicator::before {
+            content: "●";
+            display: inline-block;
+            animation: pulse 1s infinite;
+            margin-right: 5px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .structured-units {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #fff9f0;
+            color: #333;
+        }
+
+        .structured-units .structured-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #e65100;
+        }
+
+        .structured-units .structured-meta {
+            font-size: 0.85em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .unit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .unit-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 1px solid #ffe0b2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .unit-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            background: #eee;
+        }
+
+        .unit-card .unit-details {
+            padding: 12px;
+        }
+
+        .unit-card .unit-title {
+            font-size: 1em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #5d4037;
+        }
+
+        .unit-card dl {
+            margin: 0;
+        }
+
+        .unit-card dt {
+            font-size: 0.75em;
+            text-transform: uppercase;
+            color: #9e9e9e;
+            margin-top: 6px;
+        }
+
+        .unit-card dd {
+            margin: 0;
+            font-size: 0.9em;
+            color: #424242;
+        }
+
+        .audio-player {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f1f8e9;
+            border: 1px solid #dcedc8;
+        }
+
+        .audio-player-label {
+            font-weight: 600;
+            color: #558b2f;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .audio-player-status {
+            font-size: 0.85em;
+            color: #33691e;
+            margin-top: 6px;
+        }
+
+        .audio-player audio {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ Orchestrator Test Client</h1>
+            <p>Test WebSocket connections for Voice and Text modes</p>
+        </div>
+
+        <div class="content">
+            <!-- Text Mode Section -->
+            <div class="mode-section">
+                <h2>📝 Text Mode</h2>
+                <div class="connection-status status-disconnected" id="textStatus">Disconnected</div>
+                
+                <div class="input-group">
+                    <label for="textSessionId">Session ID:</label>
+                    <input type="text" id="textSessionId" value="text-session-001" placeholder="Enter session ID">
+                </div>
+
+                <div class="input-group">
+                    <label for="textInput">Question (Arabic):</label>
+                    <textarea id="textInput" placeholder="ما هي أنواع الشقق المتاحة؟">ما هي أنواع الشقق المتاحة؟</textarea>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="connectText()">Connect</button>
+                    <button class="btn-secondary" onclick="sendTextMessage()" id="sendTextBtn" disabled>Send</button>
+                    <button class="btn-danger" onclick="disconnectText()" id="disconnectTextBtn" disabled>Disconnect</button>
+                </div>
+
+                <div class="output" id="textOutput"></div>
+                <div class="audio-player" id="textAudioPlayer">
+                    <div class="audio-player-label">
+                        🔊 Text Audio Queue
+                        <span id="textAudioStatus">Waiting for audio...</span>
+                    </div>
+                    <audio id="textAudioElement" controls preload="auto"></audio>
+                </div>
+            </div>
+
+            <!-- Voice Mode Section -->
+            <div class="mode-section">
+                <h2>🎤 Voice Mode (Voice-to-Voice Test)</h2>
+                <div style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 0.9em; color: #1976d2;">
+                    <strong>Flow:</strong> 🎤 Record Voice → 📝 ASR Transcript → 💬 RAG Response → 🔊 TTS Audio
+                </div>
+                <div class="connection-status status-disconnected" id="voiceStatus">Disconnected</div>
+                
+                <div class="input-group">
+                    <label for="voiceSessionId">Session ID:</label>
+                    <input type="text" id="voiceSessionId" value="voice-session-001" placeholder="Enter session ID">
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="connectVoice()">Connect</button>
+                    <button class="btn-success" onclick="startRecording()" id="recordBtn" disabled>Start Recording</button>
+                    <button class="btn-danger" onclick="stopRecording()" id="stopBtn" disabled>Stop & Send</button>
+                    <button class="btn-danger" onclick="disconnectVoice()" id="disconnectVoiceBtn" disabled>Disconnect</button>
+                </div>
+
+                <div class="recording-indicator" id="recordingIndicator">🎤 Recording... Speak your question in Arabic</div>
+
+                <div class="output" id="voiceOutput"></div>
+                <div class="audio-player" id="voiceAudioPlayer">
+                    <div class="audio-player-label">
+                        🎵 Voice Audio Queue
+                        <span id="voiceAudioStatus">Waiting for audio...</span>
+                    </div>
+                    <audio id="voiceAudioElement" controls preload="auto"></audio>
+                </div>
+            </div>
+
+            <!-- Document Management Section -->
+            <div class="mode-section documents-section">
+                <h2>📂 RAG Document Manager</h2>
+                <p style="margin-bottom: 15px; color: #555;">
+                    Use this panel to manage the files served by the RAG backend via the orchestrator proxy.
+                </p>
+
+                <div class="documents-grid">
+                    <div class="doc-upload-grid">
+                        <div class="input-group">
+                            <label for="docUploadInput">Select file (.pdf, .txt, .docx, .md)</label>
+                            <input type="file" id="docUploadInput" accept=".pdf,.txt,.docx,.md">
+                        </div>
+                        <div class="input-group">
+                            <label for="docUpdateName">Replace target filename (optional)</label>
+                            <input type="text" id="docUpdateName" placeholder="example.pdf">
+                        </div>
+                        <div class="input-group">
+                            <label>
+                                <input type="checkbox" id="docRebuildIndex" checked>
+                                Rebuild FAISS index after upload
+                            </label>
+                        </div>
+                        <div class="button-group" style="flex-wrap: wrap;">
+                            <button class="btn-primary btn-small" onclick="uploadDocument(false)">Upload</button>
+                            <button class="btn-secondary btn-small" onclick="uploadDocument(true)">Replace</button>
+                        </div>
+                    </div>
+
+                    <div class="button-group" style="justify-content: flex-end;">
+                        <button class="btn-secondary btn-small" onclick="fetchDocuments()">Refresh List</button>
+                        <button class="btn-danger btn-small" onclick="clearDocuments()">Clear All Documents</button>
+                    </div>
+
+                    <div class="doc-status" id="documentsStatus">Ready.</div>
+
+                    <div class="doc-list" id="documentsList">
+                        <div class="doc-empty">No documents found. Upload a file to get started.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ORCHESTRATOR_URL = 'ws://localhost:8040';
+        const API_BASE_URL = window.location.origin.replace(/\/$/, '');
+        let textWebSocket = null;
+        let voiceWebSocket = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let audioChunkSeq = 0;
+        const audioQueues = { text: [], voice: [] };
+        const audioStates = { text: { isPlaying: false }, voice: { isPlaying: false } };
+        const audioAutoUnlocked = { text: false, voice: false };
+        const audioElements = {};
+
+        function logDebug(...args) {
+            console.log('[TEST-CLIENT]', ...args);
+        }
+
+        // Text Mode Functions
+        function connectText() {
+            const sessionId = document.getElementById('textSessionId').value || 'text-session-' + Date.now();
+            const url = `${ORCHESTRATOR_URL}/ws/text`;
+            
+            updateTextStatus('connecting', 'Connecting...');
+            
+            textWebSocket = new WebSocket(url);
+            
+            textWebSocket.onopen = () => {
+                updateTextStatus('connected', 'Connected');
+                document.getElementById('sendTextBtn').disabled = false;
+                document.getElementById('disconnectTextBtn').disabled = false;
+                
+                // Send start_session
+                textWebSocket.send(JSON.stringify({
+                    type: 'start_session',
+                    session_id: sessionId,
+                    auth: 'Bearer test-token',
+                    metadata: { lang: 'ar' }
+                }));
+                
+                addTextMessage('Connected to orchestrator', 'system');
+            };
+            
+            textWebSocket.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                logDebug('Text WS message', message);
+                handleTextMessage(message);
+            };
+            
+            textWebSocket.onerror = (error) => {
+                addTextMessage('Error: ' + error, 'error');
+                updateTextStatus('disconnected', 'Error');
+            };
+            
+            textWebSocket.onclose = () => {
+                updateTextStatus('disconnected', 'Disconnected');
+                document.getElementById('sendTextBtn').disabled = true;
+                document.getElementById('disconnectTextBtn').disabled = true;
+                addTextMessage('Connection closed', 'system');
+                resetAudioQueue('text');
+            };
+        }
+
+        function sendTextMessage() {
+            if (!textWebSocket || textWebSocket.readyState !== WebSocket.OPEN) {
+                alert('Not connected!');
+                return;
+            }
+            
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                alert('Please enter a question');
+                return;
+            }
+            
+            textWebSocket.send(JSON.stringify({
+                type: 'text_message',
+                text: text
+            }));
+            
+            addTextMessage(`Sent: ${text}`, 'sent');
+        }
+
+        function disconnectText() {
+            if (textWebSocket) {
+                textWebSocket.close();
+                textWebSocket = null;
+            }
+            resetAudioQueue('text');
+        }
+
+        function handleTextMessage(message) {
+            const type = message.type;
+            
+            switch(type) {
+                case 'rag_metadata':
+                    renderStructuredUnits('textOutput', message);
+                    break;
+                case 'rag_metadata':
+                        logDebug('Text metadata', message);
+                    renderStructuredUnits('textOutput', message);
+                    break;
+                case 'rag_chunk':
+                        logDebug('Text chunk', message.chunk?.slice(0, 60));
+                    addTextMessage(`RAG: ${message.chunk}`, 'rag', message.is_last);
+                    break;
+                case 'tts_audio':
+                        logDebug('Text tts chunk', message.seq);
+                    addTextMessage(`TTS Audio Chunk ${message.seq} (${message.is_last ? 'last' : 'partial'})`, 'tts');
+                    enqueueAudio('text', message.audio_base64, message.seq);
+                    break;
+                case 'error':
+                    addTextMessage(`ERROR: ${message.message}`, 'error');
+                    break;
+                case 'session_closed':
+                    addTextMessage(`Session closed: ${message.reason}`, 'system');
+                    break;
+                default:
+                    addTextMessage(`Received: ${JSON.stringify(message)}`, 'system');
+            }
+        }
+
+        function addTextMessage(text, type = 'system', isLast = false) {
+            const output = document.getElementById('textOutput');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            messageDiv.innerHTML = `<span class="timestamp">[${timestamp}]</span>${text}`;
+            
+            output.appendChild(messageDiv);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateTextStatus(status, text) {
+            const statusEl = document.getElementById('textStatus');
+            statusEl.className = `connection-status status-${status}`;
+            statusEl.textContent = text;
+        }
+
+        // Voice Mode Functions
+        function connectVoice() {
+            const sessionId = document.getElementById('voiceSessionId').value || 'voice-session-' + Date.now();
+            const url = `${ORCHESTRATOR_URL}/ws/voice`;
+            
+            updateVoiceStatus('connecting', 'Connecting...');
+            
+            voiceWebSocket = new WebSocket(url);
+            
+            voiceWebSocket.onopen = () => {
+                updateVoiceStatus('connected', 'Connected');
+                document.getElementById('recordBtn').disabled = false;
+                document.getElementById('disconnectVoiceBtn').disabled = false;
+                
+                // Send start_session
+                voiceWebSocket.send(JSON.stringify({
+                    type: 'start_session',
+                    session_id: sessionId,
+                    auth: 'Bearer test-token',
+                    metadata: { lang: 'ar', sample_rate: 16000 }
+                }));
+                
+                addVoiceMessage('Connected to orchestrator', 'system');
+            };
+            
+            voiceWebSocket.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                logDebug('Voice WS message', message);
+                handleVoiceMessage(message);
+            };
+            
+            voiceWebSocket.onerror = (error) => {
+                addVoiceMessage('Error: ' + error, 'error');
+                updateVoiceStatus('disconnected', 'Error');
+            };
+            
+            voiceWebSocket.onclose = () => {
+                updateVoiceStatus('disconnected', 'Disconnected');
+                document.getElementById('recordBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('disconnectVoiceBtn').disabled = true;
+                addVoiceMessage('Connection closed', 'system');
+                resetAudioQueue('voice');
+            };
+        }
+
+        async function startRecording() {
+            try {
+                // Clear previous audio queue
+                resetAudioQueue('voice');
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 16000
+                    } 
+                });
+                
+                // Try to use webm, fallback to default
+                let mimeType = 'audio/webm';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'audio/webm;codecs=opus';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) {
+                        mimeType = ''; // Use default
+                    }
+                }
+                
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: mimeType
+                });
+                
+                audioChunks = [];
+                audioChunkSeq = 0;
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                        sendAudioChunk(event.data);
+                    }
+                };
+                
+                // Start recording with 500ms chunks for better real-time feel
+                mediaRecorder.start(500);
+                
+                document.getElementById('recordBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('recordingIndicator').classList.add('active');
+                
+                addVoiceMessage('🎤 Recording started... Speak your question in Arabic', 'system');
+            } catch (error) {
+                addVoiceMessage('Error accessing microphone: ' + error.message, 'error');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                
+                document.getElementById('recordBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('recordingIndicator').classList.remove('active');
+                
+                // Send end_stream
+                if (voiceWebSocket && voiceWebSocket.readyState === WebSocket.OPEN) {
+                    voiceWebSocket.send(JSON.stringify({
+                        type: 'end_stream'
+                    }));
+                    addVoiceMessage('⏸️ Recording stopped. Sending audio to ASR...', 'system');
+                    addVoiceMessage(`📤 Sent ${audioChunkSeq} audio chunk(s)`, 'system');
+                }
+            }
+        }
+
+        function sendAudioChunk(audioBlob) {
+            if (!voiceWebSocket || voiceWebSocket.readyState !== WebSocket.OPEN) {
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = () => {
+                const base64 = reader.result.split(',')[1];
+                voiceWebSocket.send(JSON.stringify({
+                    type: 'audio_chunk',
+                    seq: audioChunkSeq++,
+                    audio_base64: base64,
+                    timestamp: Date.now() / 1000
+                }));
+                // Show progress for first few chunks
+                if (audioChunkSeq <= 3) {
+                    addVoiceMessage(`📤 Sent audio chunk ${audioChunkSeq - 1} (${(audioBlob.size / 1024).toFixed(1)} KB)`, 'system');
+                }
+            };
+            reader.readAsDataURL(audioBlob);
+        }
+
+        function disconnectVoice() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                stopRecording();
+            }
+            if (voiceWebSocket) {
+                voiceWebSocket.close();
+                voiceWebSocket = null;
+            }
+            resetAudioQueue('voice');
+        }
+
+        function handleVoiceMessage(message) {
+            const type = message.type;
+            
+            switch(type) {
+                case 'rag_metadata':
+                    renderStructuredUnits('voiceOutput', message);
+                    break;
+                case 'rag_metadata':
+                        logDebug('Voice metadata', message);
+                    renderStructuredUnits('voiceOutput', message);
+                    break;
+                case 'transcript':
+                        logDebug('Voice transcript', message.text);
+                    addVoiceMessage(`📝 Transcript: ${message.text}`, 'transcript', message.is_final);
+                    if (message.is_final) {
+                        addVoiceMessage('⏳ Processing with RAG...', 'system');
+                    }
+                    break;
+                case 'rag_chunk':
+                        logDebug('Voice chunk', message.chunk?.slice(0, 60));
+                    const chunkText = message.chunk || '';
+                    if (chunkText.trim()) {
+                        addVoiceMessage(`💬 RAG Response: ${chunkText}`, 'rag', message.is_last);
+                    }
+                    if (message.is_last) {
+                        addVoiceMessage('🔊 Generating TTS audio...', 'system');
+                    }
+                    break;
+                case 'tts_audio':
+                        logDebug('Voice tts chunk', message.seq);
+                    addVoiceMessage(`🎵 Received TTS Audio Chunk ${message.seq}`, 'tts');
+                    enqueueAudio('voice', message.audio_base64, message.seq);
+                    if (message.is_last) {
+                        addVoiceMessage('✅ Voice-to-voice response complete!', 'system');
+                    }
+                    break;
+                case 'error':
+                    addVoiceMessage(`❌ ERROR: ${message.message}`, 'error');
+                    break;
+                case 'session_closed':
+                    addVoiceMessage(`🔚 Session closed: ${message.reason}`, 'system');
+                    resetAudioQueue('voice');
+                    break;
+                default:
+                    addVoiceMessage(`Received: ${JSON.stringify(message)}`, 'system');
+            }
+        }
+
+        function addVoiceMessage(text, type = 'system', isLast = false) {
+            const output = document.getElementById('voiceOutput');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            messageDiv.innerHTML = `<span class="timestamp">[${timestamp}]</span>${text}`;
+            
+            output.appendChild(messageDiv);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateVoiceStatus(status, text) {
+            const statusEl = document.getElementById('voiceStatus');
+            statusEl.className = `connection-status status-${status}`;
+            statusEl.textContent = text;
+        }
+
+        function enqueueAudio(mode, base64Audio, seq) {
+            audioQueues[mode].push({ base64: base64Audio, seq });
+            updateAudioStatus(mode, `Queued chunk ${seq} (total ${audioQueues[mode].length})`);
+            logDebug(`Queue ${mode}: added chunk ${seq}, size=${audioQueues[mode].length}`);
+            playNextAudio(mode);
+        }
+
+        function playNextAudio(mode) {
+            const state = audioStates[mode];
+            if (!audioElements[mode]) return;
+            if (state.isPlaying) return;
+            const next = audioQueues[mode].shift();
+            if (!next) {
+                updateAudioStatus(mode, 'Waiting for audio...');
+                return;
+            }
+
+            const audioEl = audioElements[mode];
+            audioEl.src = 'data:audio/mp3;base64,' + next.base64;
+            state.isPlaying = true;
+            audioEl.play().then(() => {
+                audioAutoUnlocked[mode] = true;
+                updateAudioStatus(mode, `Playing chunk ${next.seq}`);
+                logDebug(`Playback ${mode}: playing chunk ${next.seq}`);
+            }).catch(() => {
+                state.isPlaying = false;
+                audioQueues[mode].unshift(next);
+                updateAudioStatus(mode, 'Click the ▶ button once to enable audio playback.');
+                logDebug(`Playback ${mode}: blocked chunk ${next.seq}`);
+            });
+        }
+
+        function updateAudioStatus(mode, text) {
+            const statusEl = document.getElementById(mode === 'text' ? 'textAudioStatus' : 'voiceAudioStatus');
+            if (statusEl) {
+                statusEl.textContent = text;
+            }
+        }
+
+        function resetAudioQueue(mode) {
+            audioQueues[mode] = [];
+            audioStates[mode].isPlaying = false;
+            if (audioElements[mode]) {
+                audioElements[mode].pause();
+                audioElements[mode].currentTime = 0;
+            }
+            updateAudioStatus(mode, 'Waiting for audio...');
+            logDebug(`Queue ${mode}: reset`);
+        }
+
+        function setupAudioPlayers() {
+            audioElements.text = document.getElementById('textAudioElement');
+            audioElements.voice = document.getElementById('voiceAudioElement');
+            ['text', 'voice'].forEach(mode => {
+                if (audioElements[mode]) {
+                    const audioEl = audioElements[mode];
+                    audioEl.addEventListener('ended', () => {
+                        audioStates[mode].isPlaying = false;
+                        playNextAudio(mode);
+                    });
+                    audioEl.addEventListener('play', () => {
+                        if (!audioAutoUnlocked[mode]) {
+                            audioAutoUnlocked[mode] = true;
+                            updateAudioStatus(mode, 'Audio unlocked. Streaming playback...');
+                            if (!audioStates[mode].isPlaying) {
+                                playNextAudio(mode);
+                            }
+                        }
+                    });
+                    audioEl.addEventListener('pause', () => {
+                        audioStates[mode].isPlaying = false;
+                    });
+                }
+            });
+        }
+
+        function renderStructuredUnits(outputId, metadata) {
+            const output = document.getElementById(outputId);
+            const units = metadata.structured_units || [];
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'structured-units';
+
+            const header = document.createElement('div');
+            header.className = 'structured-header';
+            header.innerHTML = `📊 Structured Results <span>${units.length} unit${units.length === 1 ? '' : 's'} | selector relevance ${(metadata.unit_selector_relevance_score ?? 'n/a')}</span>`;
+            wrapper.appendChild(header);
+
+            if (metadata.unit_selector && metadata.unit_selector.error) {
+                const errorNote = document.createElement('div');
+                errorNote.className = 'structured-meta';
+                errorNote.style.color = '#c62828';
+                errorNote.textContent = `Selector error: ${metadata.unit_selector.error}`;
+                wrapper.appendChild(errorNote);
+            }
+
+            if (!units.length) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'structured-meta';
+                emptyState.textContent = 'No structured units returned for this query.';
+                wrapper.appendChild(emptyState);
+            } else {
+                const grid = document.createElement('div');
+                grid.className = 'unit-grid';
+                units.forEach(unit => grid.appendChild(createUnitCard(unit)));
+                wrapper.appendChild(grid);
+            }
+
+            output.appendChild(wrapper);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function createUnitCard(unit) {
+            const card = document.createElement('div');
+            card.className = 'unit-card';
+
+            if (unit.image_url) {
+                const img = document.createElement('img');
+                img.src = unit.image_url;
+                img.alt = unit.Unit_Type || unit.Unit_Name || 'Unit preview';
+                img.onerror = () => { img.style.display = 'none'; };
+                card.appendChild(img);
+            }
+
+            const details = document.createElement('div');
+            details.className = 'unit-details';
+
+            const title = document.createElement('div');
+            title.className = 'unit-title';
+            title.textContent = unit.Unit_Name || unit.Project || unit.Unit_Type || 'Unit';
+            details.appendChild(title);
+
+            const list = document.createElement('dl');
+            const preferredKeys = ['Unit_Type', 'Usage', 'Area', 'Price', 'City', 'Location', 'Developer'];
+            const displayedKeys = new Set();
+
+            preferredKeys.forEach(key => {
+                if (unit[key] !== undefined && unit[key] !== null && unit[key] !== '') {
+                    const dt = document.createElement('dt');
+                    dt.textContent = key.replace(/_/g, ' ');
+                    const dd = document.createElement('dd');
+                    dd.textContent = unit[key];
+                    list.appendChild(dt);
+                    list.appendChild(dd);
+                    displayedKeys.add(key);
+                }
+            });
+
+            if (list.children.length === 0) {
+                Object.entries(unit).slice(0, 6).forEach(([key, value]) => {
+                    if (key === 'image_url' || value === null || value === '') return;
+                    const dt = document.createElement('dt');
+                    dt.textContent = key.replace(/_/g, ' ');
+                    const dd = document.createElement('dd');
+                    dd.textContent = value;
+                    list.appendChild(dt);
+                    list.appendChild(dd);
+                });
+            }
+
+            if (list.children.length === 0) {
+                const fallback = document.createElement('div');
+                fallback.textContent = 'No additional details available.';
+                fallback.style.fontSize = '0.85em';
+                fallback.style.color = '#757575';
+                details.appendChild(fallback);
+            } else {
+                details.appendChild(list);
+            }
+
+            card.appendChild(details);
+            return card;
+        }
+
+        function setDocumentsStatus(text, isError = false) {
+            const statusEl = document.getElementById('documentsStatus');
+            if (statusEl) {
+                statusEl.textContent = text;
+                statusEl.style.color = isError ? '#c62828' : '#555';
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes && bytes !== 0) return 'unknown size';
+            if (bytes < 1024) return `${bytes} B`;
+            const units = ['KB', 'MB', 'GB'];
+            let value = bytes / 1024;
+            let unitIndex = 0;
+            while (value >= 1024 && unitIndex < units.length - 1) {
+                value /= 1024;
+                unitIndex++;
+            }
+            return `${value.toFixed(1)} ${units[unitIndex]}`;
+        }
+
+        function renderDocuments(documents = []) {
+            const listEl = document.getElementById('documentsList');
+            if (!listEl) return;
+
+            listEl.innerHTML = '';
+
+            if (!documents.length) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'doc-empty';
+                emptyState.textContent = 'No documents found. Upload a file to get started.';
+                listEl.appendChild(emptyState);
+                return;
+            }
+
+            documents.forEach(doc => {
+                const item = document.createElement('div');
+                item.className = 'doc-item';
+
+                const meta = document.createElement('div');
+                meta.className = 'doc-meta';
+
+                const nameEl = document.createElement('div');
+                nameEl.className = 'doc-name';
+                nameEl.textContent = doc.name || doc.filename || 'unknown';
+                meta.appendChild(nameEl);
+
+                const detailsEl = document.createElement('div');
+                detailsEl.className = 'doc-details';
+                const size = formatBytes(doc.size);
+                const modified = doc.modified ? new Date(doc.modified).toLocaleString() : 'unknown date';
+                detailsEl.textContent = `${size} • Last modified ${modified}`;
+                meta.appendChild(detailsEl);
+
+                const actions = document.createElement('div');
+                actions.className = 'doc-actions';
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-danger btn-small';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.onclick = () => deleteDocument(doc.name || doc.filename);
+
+                actions.appendChild(deleteBtn);
+
+                item.appendChild(meta);
+                item.appendChild(actions);
+                listEl.appendChild(item);
+            });
+        }
+
+        async function fetchDocuments() {
+            setDocumentsStatus('Loading documents...');
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents`);
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+                const data = await response.json();
+                renderDocuments(data.documents || []);
+                setDocumentsStatus(`Loaded ${data.total ?? data.documents?.length ?? 0} document(s).`);
+            } catch (error) {
+                console.error(error);
+                setDocumentsStatus(`Failed to load documents: ${error.message}`, true);
+            }
+        }
+
+        async function uploadDocument(isUpdate = false) {
+            const fileInput = document.getElementById('docUploadInput');
+            const rebuild = document.getElementById('docRebuildIndex').checked;
+            const targetNameInput = document.getElementById('docUpdateName');
+
+            if (!fileInput?.files?.length) {
+                alert('Please select a file to upload.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            let targetName = targetNameInput?.value?.trim();
+            if (isUpdate) {
+                targetName = targetName || file.name;
+            }
+
+            const params = new URLSearchParams({ rebuild_index: rebuild ? 'true' : 'false' });
+            const formData = new FormData();
+            formData.append('file', file);
+
+            let url = `${API_BASE_URL}/documents`;
+            let method = 'POST';
+            if (isUpdate) {
+                if (!targetName) {
+                    alert('Provide a target filename to replace or select a file with the same name.');
+                    return;
+                }
+                url = `${API_BASE_URL}/documents/${encodeURIComponent(targetName)}`;
+                method = 'PUT';
+            }
+
+            setDocumentsStatus(isUpdate ? `Replacing ${targetName || file.name}...` : 'Uploading document...');
+            try {
+                const response = await fetch(`${url}?${params.toString()}`, {
+                    method,
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const result = await response.json();
+                setDocumentsStatus(result.message || 'Document saved successfully.');
+                fileInput.value = '';
+                if (targetNameInput) targetNameInput.value = '';
+                fetchDocuments();
+            } catch (error) {
+                console.error(error);
+                setDocumentsStatus(`Upload failed: ${error.message}`, true);
+            }
+        }
+
+        async function deleteDocument(filename) {
+            if (!filename) return;
+            if (!confirm(`Delete ${filename}? This cannot be undone.`)) return;
+
+            setDocumentsStatus(`Deleting ${filename}...`);
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(filename)}?remove_from_index=true`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const result = await response.json();
+                setDocumentsStatus(result.message || `Deleted ${filename}.`);
+                fetchDocuments();
+            } catch (error) {
+                console.error(error);
+                setDocumentsStatus(`Failed to delete ${filename}: ${error.message}`, true);
+            }
+        }
+
+        async function clearDocuments() {
+            if (!confirm('Clear all documents and index? This cannot be undone.')) return;
+            setDocumentsStatus('Clearing all documents...');
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents?clear_index=true`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+                const result = await response.json();
+                setDocumentsStatus(result.message || 'All documents cleared.');
+                renderDocuments([]);
+            } catch (error) {
+                console.error(error);
+                setDocumentsStatus(`Failed to clear documents: ${error.message}`, true);
+            }
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            disconnectText();
+            disconnectVoice();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupAudioPlayers();
+            fetchDocuments();
+        });
+    </script>
+</body>
+</html>
+

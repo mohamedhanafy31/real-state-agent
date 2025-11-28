@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Chatbot - Real Estate Assistant</title>
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+
+        .panel {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel-header h2 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .panel-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Chat Panel */
+        .chat-panel {
+            grid-column: 1;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            padding: 15px 20px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease;
+            line-height: 1.6;
+        }
+
+        .message p {
+            margin: 0.5em 0;
+        }
+
+        .message p:first-child {
+            margin-top: 0;
+        }
+
+        .message p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message ul, .message ol {
+            margin: 0.5em 0;
+            padding-right: 1.5em;
+        }
+
+        .message li {
+            margin: 0.3em 0;
+        }
+
+        .message strong {
+            font-weight: 600;
+        }
+
+        .message em {
+            font-style: italic;
+        }
+
+        .message code {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .message pre {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 0.5em 0;
+        }
+
+        .message pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message h1, .message h2, .message h3 {
+            margin: 0.8em 0 0.4em 0;
+            font-weight: 600;
+        }
+
+        .message h1:first-child, .message h2:first-child, .message h3:first-child {
+            margin-top: 0;
+        }
+
+        .message blockquote {
+            border-right: 3px solid rgba(0, 0, 0, 0.2);
+            padding-right: 10px;
+            margin: 0.5em 0;
+            font-style: italic;
+        }
+
+        .message a {
+            color: inherit;
+            text-decoration: underline;
+            opacity: 0.8;
+        }
+
+        .message a:hover {
+            opacity: 1;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.assistant {
+            background: white;
+            color: #333;
+            align-self: flex-start;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message.loading {
+            background: #f0f0f0;
+            color: #666;
+            align-self: flex-start;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        /* Documents Panel */
+        .documents-panel {
+            grid-column: 2;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e8ebff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 12px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .documents-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .document-item {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .document-item:hover {
+            background: #f0f0f0;
+            transform: translateX(-5px);
+        }
+
+        .document-info {
+            flex: 1;
+        }
+
+        .document-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .document-meta {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-icon {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .status-bar {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #27ae60;
+        }
+
+        .status-dot.warning {
+            background: #f39c12;
+        }
+
+        .status-dot.error {
+            background: #e74c3c;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .notification.success {
+            border-left: 4px solid #27ae60;
+        }
+
+        .notification.error {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .notification.info {
+            border-left: 4px solid #3498db;
+        }
+
+        .notification.warning {
+            border-left: 4px solid #f39c12;
+        }
+
+        /* Structured Units Display */
+        .units-gallery {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .units-gallery-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .units-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .unit-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .unit-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .unit-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .unit-info {
+            padding: 10px;
+        }
+
+        .unit-code {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .unit-details {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .unit-price {
+            font-weight: 600;
+            color: #27ae60;
+            margin-top: 5px;
+        }
+
+        .unit-area {
+            color: #999;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .panel {
+                min-height: 500px;
+            }
+
+            .units-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Chat Panel -->
+        <div class="panel chat-panel">
+            <div class="panel-header">
+                <h2>💬 محادثة المساعد</h2>
+                <p>اسأل عن العقارات والخدمات المتاحة</p>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-dot" id="apiStatus"></span>
+                    <span id="apiStatusText">جارٍ الاتصال...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-dot" id="indexStatus"></span>
+                    <span id="indexStatusText">جارٍ التحقق...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-dot" id="apiKeyStatus"></span>
+                    <span id="apiKeyStatusText">جارٍ التحقق...</span>
+                </div>
+                <div class="status-item">
+                    <button class="btn btn-danger btn-icon" onclick="clearChatHistory()" style="padding: 5px 10px; font-size: 12px;">
+                        🗑️ مسح المحادثة
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    مرحباً! أنا مساعدك الذكي للعقارات. كيف يمكنني مساعدتك اليوم؟
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <input 
+                    type="text" 
+                    class="chat-input" 
+                    id="chatInput" 
+                    placeholder="اكتب سؤالك هنا..."
+                    onkeypress="if(event.key === 'Enter') sendMessage()"
+                >
+                <button class="btn btn-primary" id="sendBtn" onclick="sendMessage()">
+                    إرسال
+                </button>
+            </div>
+        </div>
+
+        <!-- Documents Panel -->
+        <div class="panel documents-panel">
+            <div class="panel-header">
+                <h2>📄 إدارة المستندات</h2>
+                <p>قم برفع وإدارة المستندات الخاصة بك</p>
+            </div>
+
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📤</div>
+                <div class="upload-text">اضغط أو اسحب الملفات هنا للرفع</div>
+                <div class="upload-hint">يدعم: PDF, DOCX, TXT, MD</div>
+                <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt,.md" onchange="handleFileSelect(event)">
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item">
+                    <span>إجمالي المستندات: <strong id="docCount">0</strong></span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success btn-icon" onclick="triggerIngestion()" id="ingestBtn">
+                        ⚙️ بناء الفهرس
+                    </button>
+                    <button class="btn btn-success btn-icon" onclick="refreshDocuments()">
+                        🔄 تحديث
+                    </button>
+                    <button class="btn btn-danger btn-icon" onclick="clearAllDocuments()" id="clearAllBtn">
+                        🗑️ مسح الكل
+                    </button>
+                </div>
+            </div>
+
+            <div class="documents-list" id="documentsList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📁</div>
+                    <div>لا توجد مستندات</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let isLoading = false;
+        
+        // Generate or retrieve session ID
+        function getSessionId() {
+            let sessionId = sessionStorage.getItem('chat_session_id');
+            if (!sessionId) {
+                sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                sessionStorage.setItem('chat_session_id', sessionId);
+            }
+            return sessionId;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkHealth();
+            loadDocuments();
+            
+            // Refresh health status every 30 seconds
+            setInterval(checkHealth, 30000);
+        });
+
+        // Health Check
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                updateStatus('apiStatus', data.status === 'healthy', 'API');
+                updateStatus('indexStatus', data.index_exists, 'الفهرس');
+                updateStatus('apiKeyStatus', data.gemini_api_key_set, 'مفتاح API');
+                
+                if (!data.index_exists) {
+                    showNotification('تحذير: الفهرس غير موجود. يرجى بناء الفهرس أولاً.', 'warning');
+                }
+                
+                if (!data.gemini_api_key_set) {
+                    showNotification('تحذير: مفتاح Gemini API غير محدد. لن يعمل نظام الدردشة.', 'error');
+                }
+            } catch (error) {
+                updateStatus('apiStatus', false, 'API');
+                showNotification('خطأ في الاتصال بالخادم', 'error');
+            }
+        }
+
+        function updateStatus(elementId, isOk, label) {
+            const dot = document.getElementById(elementId);
+            const text = document.getElementById(elementId + 'Text');
+            
+            if (isOk) {
+                dot.className = 'status-dot';
+                text.textContent = `${label}: جاهز`;
+            } else {
+                dot.className = 'status-dot warning';
+                text.textContent = `${label}: غير متاح`;
+            }
+        }
+
+        // Chat Functions
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message || isLoading) return;
+            
+            // Check API key status first
+            try {
+                const healthResponse = await fetch(`${API_BASE}/health`);
+                const healthData = await healthResponse.json();
+                
+                if (!healthData.gemini_api_key_set) {
+                    addMessage('خطأ: مفتاح Gemini API غير محدد. يرجى تعيين متغير البيئة GEMINI_API_KEY.', 'assistant');
+                    showNotification('مفتاح API غير محدد. لن يعمل نظام الدردشة.', 'error');
+                    return;
+                }
+            } catch (error) {
+                console.error('Error checking health:', error);
+            }
+            
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            
+            // Disable input
+            isLoading = true;
+            document.getElementById('sendBtn').disabled = true;
+            
+            // Add loading message that will be replaced with streaming
+            const loadingId = addMessage('جارٍ التفكير...', 'loading');
+            let streamMessageId = null;
+            let fullText = '';
+            let structuredUnits = []; // Store structured units for display
+            let updatePending = false;
+            let lastUpdateTime = 0;
+            const UPDATE_THROTTLE_MS = 50; // Update UI at most every 50ms for smooth streaming
+            
+            // Function to update UI with throttling
+            const updateUI = () => {
+                if (updatePending) return;
+                updatePending = true;
+                
+                requestAnimationFrame(() => {
+                    const streamMessageDiv = document.getElementById(streamMessageId);
+                    if (!streamMessageDiv) {
+                        updatePending = false;
+                        return;
+                    }
+                    
+                    const now = Date.now();
+                    if (now - lastUpdateTime < UPDATE_THROTTLE_MS && fullText.length < 1000) {
+                        // For small text, update more frequently for better UX
+                        updatePending = false;
+                        setTimeout(updateUI, 16); // ~60fps
+                        return;
+                    }
+                    
+                    // Update message with markdown rendering
+                    if (typeof marked !== 'undefined') {
+                        streamMessageDiv.innerHTML = marked.parse(fullText);
+                    } else {
+                        // Convert newlines to <br> for plain text fallback
+                        streamMessageDiv.innerHTML = fullText.replace(/\n/g, '<br>');
+                    }
+                    
+                    // Auto-scroll
+                    const messagesDiv = document.getElementById('chatMessages');
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    
+                    lastUpdateTime = now;
+                    updatePending = false;
+                });
+            };
+            
+            try {
+                const sessionId = getSessionId();
+                const response = await fetch(`${API_BASE}/query/stream`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: message,
+                        session_id: sessionId,
+                        retrieval_k: 5,
+                        temperature: 0.7,
+                        include_context: false
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMsg = errorData.detail || `HTTP error! status: ${response.status}`;
+                    throw new Error(errorMsg);
+                }
+                
+                // Remove loading message
+                removeMessage(loadingId);
+                
+                // Create new message for streaming
+                streamMessageId = addMessage('', 'assistant');
+                const streamMessageDiv = document.getElementById(streamMessageId);
+                
+                // Read the stream
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line in buffer
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                
+                                if (data.type === 'error') {
+                                    throw new Error(data.message);
+                                } else if (data.type === 'chunk') {
+                                    fullText += data.text;
+                                    // Trigger UI update (throttled)
+                                    updateUI();
+                                } else if (data.type === 'metadata') {
+                                    // Store structured units for display
+                                    if (data.structured_units && data.structured_units.length > 0) {
+                                        structuredUnits = data.structured_units;
+                                    }
+                                    console.log('Metadata:', data);
+                                } else if (data.type === 'done') {
+                                    fullText = data.full_text;
+                                    // Final render with markdown (immediate, no throttling)
+                                    if (typeof marked !== 'undefined') {
+                                        streamMessageDiv.innerHTML = marked.parse(fullText);
+                                    } else {
+                                        // Convert newlines to <br> for plain text fallback
+                                        streamMessageDiv.innerHTML = fullText.replace(/\n/g, '<br>');
+                                    }
+                                    
+                                    // Add structured units with images if available
+                                    if (structuredUnits && structuredUnits.length > 0) {
+                                        displayStructuredUnits(streamMessageDiv, structuredUnits);
+                                    }
+                                    
+                                    // Auto-scroll
+                                    const messagesDiv = document.getElementById('chatMessages');
+                                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                                }
+                            } catch (e) {
+                                console.error('Error parsing SSE data:', e);
+                            }
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                if (streamMessageId) {
+                    removeMessage(streamMessageId);
+                } else {
+                    removeMessage(loadingId);
+                }
+                
+                let errorMessage = 'عذراً، حدث خطأ في معالجة طلبك. يرجى المحاولة مرة أخرى.';
+                
+                if (error.message.includes('API') || error.message.includes('GEMINI')) {
+                    errorMessage = 'خطأ: مفتاح Gemini API غير محدد أو غير صالح. يرجى التحقق من إعدادات البيئة.';
+                } else if (error.message.includes('Index not found') || error.message.includes('الفهرس')) {
+                    errorMessage = 'خطأ: الفهرس غير موجود. يرجى بناء الفهرس أولاً باستخدام زر "بناء الفهرس".';
+                }
+                
+                addMessage(errorMessage, 'assistant');
+                console.error('Error:', error);
+            } finally {
+                isLoading = false;
+                document.getElementById('sendBtn').disabled = false;
+                input.focus();
+            }
+        }
+
+        // Configure marked.js for markdown parsing
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true,  // Convert \n to <br>
+                gfm: true,     // GitHub Flavored Markdown
+                langPrefix: 'language-',
+                highlight: function(code, lang) {
+                    // Simple syntax highlighting (can be enhanced with highlight.js)
+                    return code;
+                }
+            });
+        }
+
+        function addMessage(text, type) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            const messageId = 'msg-' + Date.now();
+            messageDiv.id = messageId;
+            messageDiv.className = `message ${type}`;
+            
+            // Parse markdown if available, otherwise use plain text
+            if (typeof marked !== 'undefined' && type !== 'loading') {
+                // Parse markdown and set as HTML
+                messageDiv.innerHTML = marked.parse(text);
+            } else {
+                // For loading messages or if marked.js is not available, convert newlines to <br>
+                messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return messageId;
+        }
+
+        function removeMessage(messageId) {
+            const message = document.getElementById(messageId);
+            if (message) {
+                message.remove();
+            }
+        }
+
+        // Document Functions
+        async function loadDocuments() {
+            try {
+                const response = await fetch(`${API_BASE}/documents`);
+                const data = await response.json();
+                
+                document.getElementById('docCount').textContent = data.total;
+                displayDocuments(data.documents);
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                showNotification('خطأ في تحميل المستندات', 'error');
+            }
+        }
+
+        function displayDocuments(documents) {
+            const listDiv = document.getElementById('documentsList');
+            
+            if (documents.length === 0) {
+                listDiv.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📁</div>
+                        <div>لا توجد مستندات</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            listDiv.innerHTML = documents.map(doc => `
+                <div class="document-item">
+                    <div class="document-info">
+                        <div class="document-name">${doc.name}</div>
+                        <div class="document-meta">
+                            ${formatFileSize(doc.size)} • ${formatDate(doc.modified)}
+                        </div>
+                    </div>
+                    <div class="document-actions">
+                        <button class="btn btn-danger btn-icon" onclick="deleteDocument('${doc.name}')">
+                            🗑️ حذف
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function handleFileSelect(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+            
+            const allowedExtensions = ['.pdf', '.docx', '.txt', '.md'];
+            const filesToUpload = Array.from(files).filter(file => {
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                return allowedExtensions.includes(ext);
+            });
+            
+            if (filesToUpload.length !== files.length) {
+                const skipped = files.length - filesToUpload.length;
+                showNotification(`تم تخطي ${skipped} ملف غير مدعوم. الأنواع المدعومة: PDF, DOCX, TXT, MD`, 'warning');
+            }
+            
+            for (let file of filesToUpload) {
+                await uploadDocument(file);
+            }
+            
+            // Reset input
+            event.target.value = '';
+        }
+
+        async function uploadDocument(file) {
+            // Validate file size (e.g., max 50MB)
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            if (file.size > maxSize) {
+                showNotification(`الملف ${file.name} كبير جداً. الحد الأقصى: 50MB`, 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                showNotification(`جارٍ رفع ${file.name}...`, 'info');
+                
+                // Upload with automatic index rebuild
+                const response = await fetch(`${API_BASE}/documents/upload?rebuild_index=true`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+                    throw new Error(error.detail || 'Upload failed');
+                }
+                
+                const data = await response.json();
+                
+                // Show appropriate message based on response
+                if (data.message.includes('index rebuilt')) {
+                    showNotification(`تم رفع ${file.name} وبناء الفهرس بنجاح`, 'success');
+                } else {
+                    showNotification(`تم رفع ${file.name} بنجاح`, 'success');
+                }
+                
+                loadDocuments();
+                
+                // Refresh health status to update index status
+                await checkHealth();
+                
+            } catch (error) {
+                showNotification(`خطأ في رفع ${file.name}: ${error.message}`, 'error');
+                console.error('Upload error:', error);
+            }
+        }
+
+        async function deleteDocument(filename) {
+            if (!confirm(`هل أنت متأكد من حذف "${filename}"؟\n\nسيتم أيضاً حذف أجزاء المستند من الفهرس.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/documents/${encodeURIComponent(filename)}?remove_from_index=true`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.detail || 'Delete failed');
+                }
+                
+                const data = await response.json();
+                let message = `تم حذف ${filename} بنجاح`;
+                if (data.chunks_removed) {
+                    message += ` (تم حذف ${data.chunks_removed} جزء من الفهرس)`;
+                }
+                
+                showNotification(message, 'success');
+                loadDocuments();
+                
+                // Refresh health status to update index status
+                await checkHealth();
+                
+            } catch (error) {
+                showNotification(`خطأ في حذف ${filename}: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearAllDocuments() {
+            if (!confirm('هل أنت متأكد من حذف جميع المستندات؟\n\nسيتم أيضاً حذف الفهرس بالكامل.\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
+                return;
+            }
+            
+            const btn = document.getElementById('clearAllBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span> جارٍ الحذف...';
+            
+            try {
+                showNotification('جارٍ حذف جميع المستندات...', 'info');
+                
+                const response = await fetch(`${API_BASE}/documents?clear_index=true`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.detail || 'Clear failed');
+                }
+                
+                const data = await response.json();
+                let message = `تم حذف ${data.files_deleted} مستند بنجاح`;
+                if (data.index_cleared) {
+                    message += ' وتم حذف الفهرس';
+                }
+                
+                showNotification(message, 'success');
+                loadDocuments();
+                
+                // Refresh health status to update index status
+                await checkHealth();
+                
+            } catch (error) {
+                showNotification(`خطأ في حذف المستندات: ${error.message}`, 'error');
+                console.error('Clear all error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function refreshDocuments() {
+            await loadDocuments();
+            showNotification('تم تحديث قائمة المستندات', 'success');
+        }
+
+        async function triggerIngestion() {
+            const btn = document.getElementById('ingestBtn');
+            const originalText = btn.innerHTML;
+            
+            if (!confirm('هل تريد بناء الفهرس من المستندات الحالية؟ قد يستغرق هذا بعض الوقت.')) {
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span> جارٍ البناء...';
+            
+            try {
+                showNotification('جارٍ بناء الفهرس... قد يستغرق هذا بعض الوقت', 'info');
+                
+                const response = await fetch(`${API_BASE}/ingest`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        data_path: 'data/raw'
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Ingestion failed');
+                }
+                
+                const data = await response.json();
+                showNotification(`تم بناء الفهرس بنجاح! ${data.num_documents} مستند، ${data.num_chunks} جزء`, 'success');
+                
+                // Refresh health status
+                await checkHealth();
+                
+            } catch (error) {
+                showNotification(`خطأ في بناء الفهرس: ${error.message}`, 'error');
+                console.error('Ingestion error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Drag and Drop
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const allowedExtensions = ['.pdf', '.docx', '.txt', '.md'];
+            const files = Array.from(e.dataTransfer.files);
+            const filesToUpload = files.filter(file => {
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                return allowedExtensions.includes(ext);
+            });
+            
+            if (filesToUpload.length !== files.length) {
+                const skipped = files.length - filesToUpload.length;
+                showNotification(`تم تخطي ${skipped} ملف غير مدعوم. الأنواع المدعومة: PDF, DOCX, TXT, MD`, 'warning');
+            }
+            
+            for (let file of filesToUpload) {
+                await uploadDocument(file);
+            }
+        });
+
+        // Utility Functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ar-EG', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function displayStructuredUnits(messageDiv, units) {
+            if (!units || units.length === 0) return;
+            
+            // Create units gallery container
+            const galleryDiv = document.createElement('div');
+            galleryDiv.className = 'units-gallery';
+            
+            const title = document.createElement('div');
+            title.className = 'units-gallery-title';
+            title.textContent = `الوحدات المتاحة (${units.length})`;
+            galleryDiv.appendChild(title);
+            
+            const grid = document.createElement('div');
+            grid.className = 'units-grid';
+            
+            units.forEach(unit => {
+                const card = document.createElement('div');
+                card.className = 'unit-card';
+                
+                // Image
+                if (unit.image_url) {
+                    const img = document.createElement('img');
+                    img.src = unit.image_url;
+                    img.alt = unit.Code || unit.Name || 'Unit Image';
+                    img.className = 'unit-image';
+                    img.onerror = function() {
+                        this.style.display = 'none';
+                    };
+                    card.appendChild(img);
+                }
+                
+                // Info
+                const info = document.createElement('div');
+                info.className = 'unit-info';
+                
+                if (unit.Code) {
+                    const code = document.createElement('div');
+                    code.className = 'unit-code';
+                    code.textContent = unit.Code;
+                    info.appendChild(code);
+                }
+                
+                if (unit.Price) {
+                    const price = document.createElement('div');
+                    price.className = 'unit-price';
+                    price.textContent = `السعر: ${formatNumber(unit.Price)} جنيه`;
+                    info.appendChild(price);
+                }
+                
+                if (unit.Area) {
+                    const area = document.createElement('div');
+                    area.className = 'unit-area';
+                    area.textContent = `المساحة: ${unit.Area} م²`;
+                    info.appendChild(area);
+                }
+                
+                if (unit.Usage) {
+                    const usage = document.createElement('div');
+                    usage.className = 'unit-details';
+                    usage.textContent = `النوع: ${unit.Usage}`;
+                    info.appendChild(usage);
+                }
+                
+                card.appendChild(info);
+                grid.appendChild(card);
+            });
+            
+            galleryDiv.appendChild(grid);
+            messageDiv.appendChild(galleryDiv);
+            
+            // Auto-scroll to show the gallery
+            const messagesDiv = document.getElementById('chatMessages');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function formatNumber(num) {
+            if (!num) return '0';
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        async function clearChatHistory() {
+            if (!confirm('هل تريد مسح تاريخ المحادثة؟')) {
+                return;
+            }
+            
+            try {
+                const sessionId = getSessionId();
+                const response = await fetch(`${API_BASE}/chat/clear`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to clear history');
+                }
+                
+                // Clear chat messages (keep welcome message)
+                const messagesDiv = document.getElementById('chatMessages');
+                const welcomeMsg = messagesDiv.firstElementChild;
+                messagesDiv.innerHTML = '';
+                messagesDiv.appendChild(welcomeMsg);
+                
+                showNotification('تم مسح تاريخ المحادثة', 'success');
+            } catch (error) {
+                showNotification('خطأ في مسح تاريخ المحادثة', 'error');
+                console.error('Error clearing history:', error);
+            }
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming Test - Frontend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 200px;
+            background: #f9f9f9;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .chunk {
+            background: #e3f2fd;
+            padding: 2px 4px;
+            margin: 2px 0;
+            border-left: 3px solid #2196f3;
+        }
+        .stats {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+        .stat-item {
+            margin: 5px 0;
+        }
+        .error {
+            color: red;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: green;
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Frontend Streaming Test</h1>
+        <p>This test shows exactly how the frontend receives and processes streaming chunks.</p>
+        
+        <div class="input-group">
+            <input type="text" id="questionInput" placeholder="أخبرني عن أرخص 3 شقق" value="أخبرني عن أرخص 3 شقق">
+            <button id="sendBtn" onclick="testStreaming()">Test Streaming</button>
+        </div>
+        
+        <div id="errorArea"></div>
+        
+        <h3>Stream Output:</h3>
+        <div id="output" class="output">Waiting for test...</div>
+        
+        <div class="stats">
+            <h3>Statistics:</h3>
+            <div id="stats">
+                <div class="stat-item">Chunks received: <span id="chunkCount">0</span></div>
+                <div class="stat-item">Total characters: <span id="charCount">0</span></div>
+                <div class="stat-item">Time to first chunk: <span id="firstChunkTime">-</span></div>
+                <div class="stat-item">Total duration: <span id="totalTime">-</span></div>
+                <div class="stat-item">Average chunk size: <span id="avgChunkSize">-</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let startTime = null;
+        let firstChunkTime = null;
+        let chunkCount = 0;
+        let totalChars = 0;
+        let chunkSizes = [];
+
+        async function testStreaming() {
+            const question = document.getElementById('questionInput').value.trim();
+            if (!question) {
+                alert('Please enter a question');
+                return;
+            }
+
+            // Reset stats
+            startTime = Date.now();
+            firstChunkTime = null;
+            chunkCount = 0;
+            totalChars = 0;
+            chunkSizes = [];
+            
+            const output = document.getElementById('output');
+            const errorArea = document.getElementById('errorArea');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            output.innerHTML = '<div style="color: #666;">Connecting...</div>';
+            errorArea.innerHTML = '';
+            sendBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/query/stream`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        session_id: 'test_frontend',
+                        retrieval_k: 5,
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+
+                output.innerHTML = '<div style="color: #666;">Streaming started...</div><br>';
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let fullText = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    // Decode chunk
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line
+
+                    // Process complete lines
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                const elapsed = (Date.now() - startTime) / 1000;
+
+                                if (data.type === 'metadata') {
+                                    output.innerHTML += `<div class="success">[${elapsed.toFixed(3)}s] 📊 METADATA: ${data.num_chunks} chunks, ${data.num_structured_units} units</div>`;
+                                } else if (data.type === 'chunk') {
+                                    chunkCount++;
+                                    const chunkText = data.text;
+                                    const chunkSize = chunkText.length;
+                                    chunkSizes.push(chunkSize);
+                                    totalChars += chunkSize;
+                                    fullText += chunkText;
+
+                                    if (firstChunkTime === null) {
+                                        firstChunkTime = elapsed;
+                                    }
+
+                                    // Display chunk with timestamp
+                                    const timeSinceLast = chunkCount > 1 ? 
+                                        (elapsed - (firstChunkTime + (chunkCount - 2) * 0.1)).toFixed(3) : '0.000';
+                                    
+                                    output.innerHTML += `<div class="chunk">[${elapsed.toFixed(3)}s] Chunk #${chunkCount} (${chunkSize} chars): ${escapeHtml(chunkText)}</div>`;
+                                    
+                                    // Update stats
+                                    updateStats();
+                                    
+                                    // Auto-scroll
+                                    output.scrollTop = output.scrollHeight;
+                                } else if (data.type === 'done') {
+                                    const totalTime = (Date.now() - startTime) / 1000;
+                                    output.innerHTML += `<div class="success">[${elapsed.toFixed(3)}s] ✅ STREAM COMPLETE</div>`;
+                                    output.innerHTML += `<div style="margin-top: 10px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px;"><strong>Full Response:</strong><br>${escapeHtml(data.full_text)}</div>`;
+                                    updateStats();
+                                } else if (data.type === 'error') {
+                                    throw new Error(data.message);
+                                }
+                            } catch (e) {
+                                if (e.name !== 'SyntaxError') {
+                                    throw e;
+                                }
+                                console.error('JSON parse error:', e, 'Line:', line);
+                            }
+                        }
+                    }
+                }
+
+                errorArea.innerHTML = '<div class="success">✅ Streaming test completed successfully!</div>';
+            } catch (error) {
+                errorArea.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                console.error('Error:', error);
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('chunkCount').textContent = chunkCount;
+            document.getElementById('charCount').textContent = totalChars;
+            document.getElementById('firstChunkTime').textContent = firstChunkTime ? firstChunkTime.toFixed(3) + 's' : '-';
+            
+            if (startTime) {
+                const totalTime = (Date.now() - startTime) / 1000;
+                document.getElementById('totalTime').textContent = totalTime.toFixed(3) + 's';
+            }
+            
+            if (chunkSizes.length > 0) {
+                const avg = (totalChars / chunkCount).toFixed(1);
+                document.getElementById('avgChunkSize').textContent = avg + ' chars';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('questionInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testStreaming();
+            }
+        });
+    </script>
+</body>
+</html>
+

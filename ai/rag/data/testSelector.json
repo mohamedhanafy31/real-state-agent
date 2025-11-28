@@ -1,0 +1,347 @@
+{
+    "examples": [
+      {
+        "query": "انا معايا مليون جنيه ايه اللي ممكن اشتريه؟",
+        "description": "Budget-based selection. Retrieve all units <= 1M EGP.",
+        "expected_filter": "Price <= 1_000_000",
+        "returned_rows": [12, 18, 44]
+      },
+      {
+        "query": "عايز ارخص وحدة متاحة عندكم",
+        "description": "Get lowest-price unit sorted ascending.",
+        "expected_filter": "sort by Price ASC, take 1",
+        "returned_rows": [5]
+      },
+      {
+        "query": "انا عايز فيلا كبيرة بمساحة فوق 600 متر",
+        "description": "Large villa query.",
+        "expected_filter": "Usage == 'Villa' AND Area >= 600",
+        "returned_rows": [7, 21]
+      },
+      {
+        "query": "عايز شقة في الدور التاني",
+        "description": "Filter by floor.",
+        "expected_filter": "Floor == '2nd'",
+        "returned_rows": [3, 11, 19]
+      },
+      {
+        "query": "اديني كل الوحدات اللي فيها جاردن",
+        "description": "Garden existence filter.",
+        "expected_filter": "Garden > 0",
+        "returned_rows": [7, 14, 22, 30]
+      },
+      {
+        "query": "انا عايز شقة في هاواي باي",
+        "description": "Project name filter.",
+        "expected_filter": "Project == 'Hawabay'",
+        "returned_rows": [7, 8, 9]
+      },
+      {
+        "query": "عايز اكبر وحدة في المساحة",
+        "description": "Return max area.",
+        "expected_filter": "sort by Area DESC, take 1",
+        "returned_rows": [7]
+      },
+      {
+        "query": "ايه الوحدات اللي فيها رووف كبير؟",
+        "description": "Find units with roof area > 0.",
+        "expected_filter": "Roof > 0",
+        "returned_rows": [7, 16]
+      },
+      {
+        "query": "انا عايز شقة مش فيلا",
+        "description": "Usage filter.",
+        "expected_filter": "Usage != 'Villa'",
+        "returned_rows": [2, 3, 4, 5]
+      },
+      {
+        "query": "انا عايز وحدة تكون اقل من 10 مليون",
+        "description": "Price range filter.",
+        "expected_filter": "Price <= 10_000_000",
+        "returned_rows": [3, 18, 20, 33]
+      },
+      {
+        "query": "افضل وحدة عندكم في السعر مقابل المساحة",
+        "description": "Compute value: Area / Price.",
+        "expected_filter": "sort by (Area / Price) DESC, take top 1",
+        "returned_rows": [14]
+      },
+      {
+        "query": "عايز شقة استلام فوري",
+        "description": "Availability filter.",
+        "expected_filter": "Status == 'Ready'",
+        "returned_rows": [9, 10]
+      },
+      {
+        "query": "هاتلي الوحدات اللي في الدور الارضى",
+        "description": "Ground floor filter.",
+        "expected_filter": "Floor == 'Ground'",
+        "returned_rows": [1, 4, 6]
+      },
+      {
+        "query": "انا عايز وحدة بقسط شهري يكون اقل من 20 الف",
+        "description": "Price → monthly installment conversion. Example: price / 84 months.",
+        "expected_filter": "(Price / 84) <= 20000",
+        "returned_rows": [12, 18]
+      },
+      {
+        "query": "ايه الوحدات اللي سعرها بين 5 و 7 مليون",
+        "description": "Price range search.",
+        "expected_filter": "Price >= 5_000_000 AND Price <= 7_000_000",
+        "returned_rows": [13, 14, 15]
+      },
+      {
+        "query": "عندك وحدات بتطل علي البحر؟",
+        "description": "Sea view filter. Search for units with sea view in description.",
+        "expected_filter": "Description CONTAINS 'مطل على البحر' OR Description CONTAINS 'sea view' OR Description CONTAINS 'beach view'",
+        "returned_rows": [2, 3, 6, 12, 13, 16]
+      },
+      {
+        "query": "عايز فيلا بتطل على البحر",
+        "description": "Villa with sea view filter.",
+        "expected_filter": "Usage == 'Villa' AND (Description CONTAINS 'مطل على البحر' OR Description CONTAINS 'sea view' OR Description CONTAINS 'beach view')",
+        "returned_rows": [2, 13]
+      },
+      {
+        "query": "عايز شقة بتطل على البحر",
+        "description": "Apartment with sea view filter.",
+        "expected_filter": "Usage == 'Apartment' AND (Description CONTAINS 'مطل على البحر' OR Description CONTAINS 'sea view' OR Description CONTAINS 'beach view')",
+        "returned_rows": [3, 12]
+      },
+      {
+        "query": "عايز وحدة بتطل على البحر وسعرها اقل من 10 مليون",
+        "description": "Sea view with price filter.",
+        "expected_filter": "Price <= 10_000_000 AND (Description CONTAINS 'مطل على البحر' OR Description CONTAINS 'sea view' OR Description CONTAINS 'beach view')",
+        "returned_rows": [3, 6, 12]
+      },
+      {
+        "query": "عايز فيلا كبيرة بتطل على البحر",
+        "description": "Large villa with sea view.",
+        "expected_filter": "Usage == 'Villa' AND Area >= 600 AND (Description CONTAINS 'مطل على البحر' OR Description CONTAINS 'sea view' OR Description CONTAINS 'beach view')",
+        "returned_rows": [2, 13]
+      },
+      {
+        "query": "عايز وحدة بتطل على الجاردن",
+        "description": "Garden view filter.",
+        "expected_filter": "Description CONTAINS 'مطل على الجاردن' OR Description CONTAINS 'garden view'",
+        "returned_rows": [8, 10, 15, 17]
+      },
+      {
+        "query": "عايز شقة بتطل على الشارع الرئيسي",
+        "description": "City view / main street view filter.",
+        "expected_filter": "Usage == 'Apartment' AND (Description CONTAINS 'مطل على الشارع الرئيسي' OR Description CONTAINS 'city view')",
+        "returned_rows": [4, 7, 18, 26]
+      },
+      {
+        "query": "عايز وحدة بتطل على مساحة خضراء",
+        "description": "Green area view filter.",
+        "expected_filter": "Description CONTAINS 'مطل على مساحة خضراء' OR Description CONTAINS 'green area'",
+        "returned_rows": [5, 9, 16, 21]
+      },
+      {
+        "query": "عايز وحدة بتطل على النادي الرياضي",
+        "description": "Sports club view filter.",
+        "expected_filter": "Description CONTAINS 'مطل على النادي' OR Description CONTAINS 'sports club'",
+        "returned_rows": [11, 14, 20, 22]
+      },
+      {
+        "query": "عايز وحدة فيها رووف",
+        "description": "Units with rooftop.",
+        "expected_filter": "Roof > 0",
+        "returned_rows": [2, 13, 16, 19, 24]
+      },
+      {
+        "query": "عايز وحدة فيها master bedroom",
+        "description": "Units with master bedroom.",
+        "expected_filter": "Description CONTAINS 'master bedroom'",
+        "returned_rows": [3, 4, 5, 7, 8, 9, 11, 12, 14, 15, 17, 18, 20, 21, 22, 26]
+      },
+      {
+        "query": "عايز شقة فيها مطبخ أمريكان",
+        "description": "Apartment with American kitchen.",
+        "expected_filter": "Usage == 'Apartment' AND Description CONTAINS 'مطبخ أمريكان'",
+        "returned_rows": [3, 4, 5, 7, 8, 9, 11, 12, 14, 15, 17, 18, 20, 21, 22, 26]
+      },
+      {
+        "query": "عايز وحدة open space",
+        "description": "Open space layout filter.",
+        "expected_filter": "Description CONTAINS 'open space'",
+        "returned_rows": [3, 4, 5, 7, 8, 9, 11, 12, 14, 15, 17, 18, 20, 21, 22, 26]
+      },
+      {
+        "query": "عايز وحدة جاهزة للسكن استلام فوري",
+        "description": "Ready to move units filter.",
+        "expected_filter": "Description CONTAINS 'استلام فوري' OR Description CONTAINS 'ready to move' OR Description CONTAINS 'جاهز للسكن'",
+        "returned_rows": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+      },
+      {
+        "query": "عايز Garden Villa",
+        "description": "Garden Villa type filter.",
+        "expected_filter": "Usage == 'Garden Villa'",
+        "returned_rows": [6, 10, 23, 25]
+      },
+      {
+        "query": "عايز Sky Villa",
+        "description": "Sky Villa type filter.",
+        "expected_filter": "Usage == 'Sky Villa'",
+        "returned_rows": [16, 19]
+      },
+      {
+        "query": "عايز وحدة فيها تراس واسع",
+        "description": "Units with wide terrace.",
+        "expected_filter": "Description CONTAINS 'تراس واسع' OR Description CONTAINS 'wide terrace'",
+        "returned_rows": [2, 3, 4, 5, 7, 9, 11, 12, 13, 14, 16, 18, 19, 20, 21, 22, 26]
+      },
+      {
+        "query": "عايز وحدة تناسب العائلات",
+        "description": "Family suitable units filter.",
+        "expected_filter": "Description CONTAINS 'suitable for families' OR Description CONTAINS 'تناسب العائلات'",
+        "returned_rows": [2, 6, 10, 13, 16, 19, 23, 24, 25]
+      },
+      {
+        "query": "عايز شقة فيها أسانسير",
+        "description": "Apartment with elevator.",
+        "expected_filter": "Usage == 'Apartment' AND Description CONTAINS 'elevator' OR Description CONTAINS 'أسانسير'",
+        "returned_rows": [3, 4, 5, 7, 8, 9, 11, 12, 14, 15, 17, 18, 20, 21, 22, 26]
+      },
+      {
+        "query": "عايز وحدة فيها security 24/7",
+        "description": "Units with 24/7 security.",
+        "expected_filter": "Description CONTAINS 'security 24/7' OR Description CONTAINS 'أمن 24/7'",
+        "returned_rows": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+      },
+      {
+        "query": "عايز وحدة fully finished",
+        "description": "Fully finished units filter.",
+        "expected_filter": "Description CONTAINS 'fully finished' OR Description CONTAINS 'تشطيب كامل'",
+        "returned_rows": [3, 4, 5, 7, 8, 9, 11, 12, 14, 15, 17, 18, 20, 21, 22, 26]
+      },
+      {
+        "query": "عايز فيلا بتشطيب الترا سوبر لوكس",
+        "description": "Villa with ultra super lux finishing.",
+        "expected_filter": "Usage == 'Villa' AND Description CONTAINS 'الترا سوبر لوكس' OR Description CONTAINS 'ultra super lux'",
+        "returned_rows": [2, 6, 10, 13, 16, 19, 23, 24, 25]
+      },
+      {
+        "query": "عايز وحدة فيها clubhouse",
+        "description": "Units with clubhouse access.",
+        "expected_filter": "Description CONTAINS 'clubhouse'",
+        "returned_rows": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+      },
+      {
+        "query": "عايز وحدة فيها gym و حمام سباحة",
+        "description": "Units with gym and swimming pool.",
+        "expected_filter": "Description CONTAINS 'gym' AND Description CONTAINS 'حمام سباحة'",
+        "returned_rows": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+      },
+      {
+        "query": "عايز وحدة في gated community",
+        "description": "Units in gated community.",
+        "expected_filter": "Description CONTAINS 'gated community' OR Description CONTAINS 'كمباوند'",
+        "returned_rows": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+      },
+      {
+        "query": "عايز وحدة فيها kids area",
+        "description": "Units with kids area.",
+        "expected_filter": "Description CONTAINS 'kids area' OR Description CONTAINS 'منطقة أطفال'",
+        "returned_rows": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+      },
+      {
+        "query": "عايز وحدة فيها open view",
+        "description": "Units with open view.",
+        "expected_filter": "Description CONTAINS 'open view'",
+        "returned_rows": [3, 4, 7, 11, 14, 16, 19, 20, 22]
+      },
+      {
+        "query": "عايز وحدة فيها panoramic view",
+        "description": "Units with panoramic view.",
+        "expected_filter": "Description CONTAINS 'panoramic view'",
+        "returned_rows": [16, 19]
+      },
+      {
+        "query": "مين المطور اللي بيعمل المشروع؟",
+        "description": "Developer/company information query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about developer, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "عايز اعرف عن شركة بانٍ للتطوير العقاري",
+        "description": "Company information query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about company profile, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "ايه رؤية الشركة المطور؟",
+        "description": "Company vision query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about company vision, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "عايز اعرف عن تاريخ الشركة",
+        "description": "Company history query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about company history, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "ايه القيم الأساسية للشركة؟",
+        "description": "Company values query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about company values, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "عايز اعرف عن مشاريع الشركة السابقة",
+        "description": "Previous projects query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about previous projects, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "الشركة عندها شراكات مع مين؟",
+        "description": "Partnerships query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about partnerships, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "ايه الجوائز اللي الشركة كسبتها؟",
+        "description": "Awards query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about awards, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "الشركة بتعمل ايه في الاستدامة البيئية؟",
+        "description": "Sustainability query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about sustainability, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "عايز اعرف عن فريق العمل في الشركة",
+        "description": "Team information query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about team, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "الشركة بتطور مشاريع فين؟",
+        "description": "Project locations query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about project locations, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "عايز اعرف عن المبادرات المجتمعية للشركة",
+        "description": "Community initiatives query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about community initiatives, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "الشركة بتطور مشاريع ساحلية؟",
+        "description": "Coastal projects query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about coastal projects, not units",
+        "returned_rows": []
+      },
+      {
+        "query": "عايز اعرف عن رسالة الشركة",
+        "description": "Company mission query - NOT related to CSV units.",
+        "expected_filter": "N/A - Query about company mission, not units",
+        "returned_rows": []
+      }
+    ]
+  }
+  
