@@ -8,6 +8,41 @@ FRONTEND_IMAGE="${REPO}/ai-p:latest"
 RAG_IMAGE="${REPO}/rag-api:latest"
 ORCH_IMAGE="${REPO}/orchestrator:latest"
 
+build_and_wait() {
+  local dir="$1"
+  local image="$2"
+
+  echo "==> Building & pushing image ${image} from ${dir}"
+  # Submit build asynchronously so gcloud doesn't try to stream logs from
+  # the Cloud Build logs bucket (which often fails under restricted perms).
+  local build_id
+  build_id="$(
+    cd "${dir}" && \
+    gcloud builds submit --tag "${image}" . --async --format='value(name)'
+  )"
+
+  echo "    Build ID: ${build_id}"
+  echo "    Waiting for build to complete..."
+
+  # Poll build status without streaming logs (avoids logs bucket perms)
+  while true; do
+    status="$(gcloud builds describe "${build_id}" --format='value(status)')"
+    case "${status}" in
+      SUCCESS)
+        echo "    Build ${build_id} succeeded."
+        break
+        ;;
+      FAILURE|CANCELLED)
+        echo "✗ Build ${build_id} failed with status: ${status}" >&2
+        exit 1
+        ;;
+      *)
+        sleep 5
+        ;;
+    esac
+  done
+}
+
 require_env() {
   local name=$1
   if [[ -z "${!name:-}" ]]; then
@@ -27,16 +62,9 @@ if ! gcloud artifacts repositories describe metavr-services --location="${REGION
     --description="Containers for frontend, RAG, orchestrator"
 fi
 
-echo "==> Building & pushing frontend image"
-# Use --no-stream-logs to avoid permission issues when the caller
-# cannot read from the Cloud Build logs bucket (common in CI).
-(cd Ai-P && gcloud builds submit --tag "${FRONTEND_IMAGE}" . --no-stream-logs)
-
-echo "==> Building & pushing RAG image"
-(cd ai/rag && gcloud builds submit --tag "${RAG_IMAGE}" . --no-stream-logs)
-
-echo "==> Building & pushing orchestrator image"
-(cd ai/orchestrator && gcloud builds submit --tag "${ORCH_IMAGE}" . --no-stream-logs)
+build_and_wait "Ai-P" "${FRONTEND_IMAGE}"
+build_and_wait "ai/rag" "${RAG_IMAGE}"
+build_and_wait "ai/orchestrator" "${ORCH_IMAGE}"
 
 require_env GEMINI_API_KEY
 require_env JWT_SECRET
