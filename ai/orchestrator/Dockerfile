@@ -18,9 +18,11 @@ COPY app/ ./app/
 # Create logs directory
 RUN mkdir -p logs
 
-# Expose port
-EXPOSE 8040
+# Cloud Run provides the listening port via the PORT env var (default 8080).
+# We respect that here so the container starts correctly on the platform.
+ENV PORT=8080
+EXPOSE 8080
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8040"]
+# Run the application (respects PORT env var for Cloud Run, defaults to 8030 for local)
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8030}"]
 

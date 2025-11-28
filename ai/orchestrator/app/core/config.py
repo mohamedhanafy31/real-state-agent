@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     
     # Server Configuration
     host: str = os.getenv("HOST", "0.0.0.0")
-    port: int = int(os.getenv("PORT", "8040"))
+    port: int = int(os.getenv("PORT", "8030"))
     
     # Authentication
     jwt_secret: str = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
