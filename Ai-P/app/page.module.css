@@ -65,11 +65,13 @@
     margin-top: 1rem;
     font-size: 1.1rem;
     font-weight: 500;
-    height: 1.5rem;
+    min-height: 1.5rem;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 100%;
+    gap: 0.5rem;
 }
 
 .statusShifted {
@@ -112,6 +114,18 @@
 
 .status-speaking {
     color: var(--accent-primary);
+}
+
+.transcriptPreview {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    text-align: center;
+    direction: rtl;
+    line-height: 1.5;
+    max-width: 640px;
+    padding: 0 8px;
+    white-space: pre-wrap;
 }
 
 .micContainer {
@@ -189,12 +203,12 @@
 /* Tablet Layout */
 @media (max-width: 1023px) {
     .page {
-        padding-top: 150px;
+        padding-top: 56px;
     }
 
     .main {
-        min-height: calc(100vh - 150px);
-        padding-top: 30px;
+        min-height: calc(100vh - 56px);
+        padding-top: 24px;
     }
 
     .mainWithPanel {
@@ -253,12 +267,12 @@
 /* Mobile Layout */
 @media (max-width: 767px) {
     .page {
-        padding-top: 140px;
+        padding-top: 40px;
     }
 
     .main {
-        min-height: calc(100vh - 140px);
-        padding-top: 24px;
+        min-height: calc(100vh - 40px);
+        padding-top: 20px;
     }
 
     .mainWithPanel {

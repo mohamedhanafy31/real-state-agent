@@ -36,6 +36,7 @@ export default function Home() {
     setFrequencyData,
     incrementSessionTimer,
     setErrorMessage,
+    clearSelectedUnits,
   } = useAppStore();
 
   const { connect, sendAudioChunk, endStream } = useWebSocket({
@@ -64,6 +65,7 @@ export default function Home() {
   const [initialized, setInitialized] = useState(false);
   const silentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [animatedTranscript, setAnimatedTranscript] = useState('');
   const [micPermission, setMicPermission] = useState<'unknown' | PermissionState>('unknown');
   const permissionStatusRef = useRef<PermissionStatus | null>(null);
   const [permissionError, setPermissionError] = useState<string | null>(null);
@@ -197,6 +199,36 @@ export default function Home() {
 
   // Track when recording started to calculate elapsed time
   const recordingStartTimeRef = useRef<number | null>(null);
+  const isStartingRecordingRef = useRef(false);
+
+  // Animate transcript text when it changes
+  useEffect(() => {
+    const full = content.transcript ?? '';
+
+    if (!full) {
+      setAnimatedTranscript('');
+      return;
+    }
+
+    let isCancelled = false;
+    let index = 0;
+    setAnimatedTranscript('');
+
+    const step = () => {
+      if (isCancelled) return;
+      index += 1;
+      setAnimatedTranscript(full.slice(0, index));
+      if (index < full.length) {
+        setTimeout(step, 25);
+      }
+    };
+
+    step();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [content.transcript]);
 
   // Handle mic button press (start recording)
   const handleMicPress = async () => {
@@ -205,96 +237,149 @@ export default function Home() {
       return;
     }
 
-    // If no session ID or connection is disconnected, reconnect first
-    if (!connection.sessionId || connection.status === 'disconnected') {
-      console.log('[OrchestratorAPI] 🔄 No active session, reconnecting before recording:', {
-        hasSessionId: !!connection.sessionId,
-        connectionStatus: connection.status
-      });
-      hasConnectedRef.current = false; // Reset to allow reconnection
-      connect();
-      // Wait a bit for connection to establish
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Re-check connection status from store
-      const currentConnection = useAppStore.getState().connection;
-      if (!currentConnection.sessionId || currentConnection.status !== 'connected') {
-        console.warn('[OrchestratorAPI] ⚠️ Failed to establish connection, cannot start recording:', {
-          hasSessionId: !!currentConnection.sessionId,
-          connectionStatus: currentConnection.status
-        });
-        return;
-      }
+    const storeState = useAppStore.getState();
+    if (storeState.audio.isRecording || isStartingRecordingRef.current) {
+      console.log('[OrchestratorAPI] ⏳ Recording already in progress or starting, ignoring press');
+      return;
     }
+
+    isStartingRecordingRef.current = true;
+
+    try {
+      // If no session ID or connection is disconnected, reconnect first
+      if (!connection.sessionId || connection.status === 'disconnected') {
+        console.log('[OrchestratorAPI] 🔄 No active session, reconnecting before recording:', {
+          hasSessionId: !!connection.sessionId,
+          connectionStatus: connection.status
+        });
+        hasConnectedRef.current = false; // Reset to allow reconnection
+        connect();
+        // Wait a bit for connection to establish
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Re-check connection status from store
+        const currentConnection = useAppStore.getState().connection;
+        if (!currentConnection.sessionId || currentConnection.status !== 'connected') {
+          console.warn('[OrchestratorAPI] ⚠️ Failed to establish connection, cannot start recording:', {
+            hasSessionId: !!currentConnection.sessionId,
+            connectionStatus: currentConnection.status
+          });
+          return;
+        }
+      }
 
       const pressTime = getTimestamp();
-    // Get current session ID from store (not from closure) to avoid stale values
-    const currentConnection = useAppStore.getState().connection;
-    console.log('[OrchestratorAPI] 🎤 Starting recording:', {
-      sessionId: currentConnection.sessionId,
-      connectionStatus: currentConnection.status,
-      timestamp: pressTime
-    });
-
-    recordingStartTimeRef.current = pressTime;
-    setBlobState('listening');
-    setIsRecording(true);
-    hasSentChunksRef.current = false;
-
-    if (recordingTimeoutRef.current) {
-      clearTimeout(recordingTimeoutRef.current);
-    }
-    recordingTimeoutRef.current = setTimeout(() => {
-      console.warn('[OrchestratorAPI] ⚠️ Max recording duration reached, stopping automatically');
-      setErrorMessage('مدة التسجيل القصوى هي 20 ثانية. حاول التحدث بجمل أقصر.');
-      handleMicRelease().catch((error) => {
-        console.error('[OrchestratorAPI] ⚠️ Failed to stop recording after timeout:', error);
-      });
-    }, MAX_RECORDING_DURATION_MS);
-
-    audioCaptureRef.current.start((base64Audio, level) => {
-      const chunkTime = getTimestamp();
-      setAudioLevel(level);
-      
       // Get current session ID from store (not from closure) to avoid stale values
       const currentConnection = useAppStore.getState().connection;
-      const currentSessionId = currentConnection.sessionId;
-      
-      if (currentSessionId) {
-        const isFirstChunk = !hasSentChunksRef.current;
-        
-        if (isFirstChunk) {
-          const timeToFirstChunk = chunkTime - (recordingStartTimeRef.current || chunkTime);
-          console.log('[OrchestratorAPI] 🎤 First audio chunk captured:', {
-            sessionId: currentSessionId,
-            audioSize: base64Audio.length,
-            audioSizeKB: (base64Audio.length / 1024).toFixed(2),
-            audioLevel: level.toFixed(4),
-            timeToFirstChunk: timeToFirstChunk.toFixed(2) + 'ms',
-            timestamp: chunkTime
-          });
-        }
-        
-        sendAudioChunk(base64Audio, currentSessionId);
-        
-        if (!hasSentChunksRef.current) {
-          // Cancel any pending timeout to revert to silent since chunks are being sent
-          if (silentTimeoutRef.current) {
-            console.log('[OrchestratorAPI] 🎤 Cancelling silent timeout - audio chunks are being sent');
-            clearTimeout(silentTimeoutRef.current);
-            silentTimeoutRef.current = null;
-          }
-        }
-        hasSentChunksRef.current = true;
-      } else {
-        console.warn('[OrchestratorAPI] ⚠️ Audio chunk captured but no active session ID:', {
-          connectionStatus: currentConnection.status,
-          timestamp: chunkTime
-        });
+      console.log('[OrchestratorAPI] 🎤 Starting recording:', {
+        sessionId: currentConnection.sessionId,
+        connectionStatus: currentConnection.status,
+        timestamp: pressTime
+      });
+
+      recordingStartTimeRef.current = pressTime;
+      setBlobState('listening');
+      setIsRecording(true);
+      hasSentChunksRef.current = false;
+
+      if (recordingTimeoutRef.current) {
+        clearTimeout(recordingTimeoutRef.current);
       }
-    });
+      recordingTimeoutRef.current = setTimeout(() => {
+        console.warn('[OrchestratorAPI] ⚠️ Max recording duration reached, stopping automatically');
+        setErrorMessage('مدة التسجيل القصوى هي 20 ثانية. حاول التحدث بجمل أقصر.');
+        handleMicRelease().catch((error) => {
+          console.error('[OrchestratorAPI] ⚠️ Failed to stop recording after timeout:', error);
+        });
+      }, MAX_RECORDING_DURATION_MS);
+
+      try {
+        audioCaptureRef.current.start((base64Audio, level) => {
+          const chunkTime = getTimestamp();
+          setAudioLevel(level);
+
+          // Get current session ID from store (not from closure) to avoid stale values
+          const currentConnection = useAppStore.getState().connection;
+          const currentSessionId = currentConnection.sessionId;
+
+          if (currentSessionId) {
+            const isFirstChunk = !hasSentChunksRef.current;
+
+            if (isFirstChunk) {
+              const timeToFirstChunk = chunkTime - (recordingStartTimeRef.current || chunkTime);
+              console.log('[OrchestratorAPI] 🎤 First audio chunk captured:', {
+                sessionId: currentSessionId,
+                audioSize: base64Audio.length,
+                audioSizeKB: (base64Audio.length / 1024).toFixed(2),
+                audioLevel: level.toFixed(4),
+                timeToFirstChunk: timeToFirstChunk.toFixed(2) + 'ms',
+                timestamp: chunkTime
+              });
+            }
+
+            sendAudioChunk(base64Audio, currentSessionId);
+
+            if (!hasSentChunksRef.current) {
+              // Cancel any pending timeout to revert to silent since chunks are being sent
+              if (silentTimeoutRef.current) {
+                console.log('[OrchestratorAPI] 🎤 Cancelling silent timeout - audio chunks are being sent');
+                clearTimeout(silentTimeoutRef.current);
+                silentTimeoutRef.current = null;
+              }
+            }
+            hasSentChunksRef.current = true;
+          } else {
+            console.warn('[OrchestratorAPI] ⚠️ Audio chunk captured but no active session ID:', {
+              connectionStatus: currentConnection.status,
+              timestamp: chunkTime
+            });
+          }
+        });
+      } catch (error) {
+        console.error('[OrchestratorAPI] ❌ Failed to start audio capture:', error);
+        setIsRecording(false);
+        setBlobState('silent');
+        if (recordingTimeoutRef.current) {
+          clearTimeout(recordingTimeoutRef.current);
+          recordingTimeoutRef.current = null;
+        }
+        recordingStartTimeRef.current = null;
+      }
+    } finally {
+      isStartingRecordingRef.current = false;
+    }
   };
 
   const showImagePanel = ui.showImages && content.gallery.length > 0;
+
+  const buildSelectedUnitsMessage = useCallback(() => {
+    const selectedIds = content.selectedUnitIds;
+    if (!selectedIds || selectedIds.length === 0) {
+      return undefined;
+    }
+
+    const selectedUnits = selectedIds
+      .map((id) => content.gallery.find((unit) => unit.id === id))
+      .filter((unit): unit is NonNullable<typeof unit> => Boolean(unit));
+
+    if (selectedUnits.length === 0) {
+      return undefined;
+    }
+
+    const formatted = selectedUnits
+      .map((unit, index) => {
+        const highlightSummary = unit.highlights
+          ?.slice(0, 2)
+          .map((highlight) => `${highlight.label}: ${highlight.value}`)
+          .join('، ');
+
+        const subtitle = unit.subtitle ? ` – ${unit.subtitle}` : '';
+        const detail = highlightSummary ? ` (${highlightSummary})` : '';
+        return `${index + 1}. ${unit.title}${subtitle}${detail}`;
+      })
+      .join('\n');
+
+    return `مهتم بالوحدات :\n${formatted}`;
+  }, [content.gallery, content.selectedUnitIds]);
 
   // Handle mic button release (stop recording)
   const handleMicRelease = async () => {
@@ -329,13 +414,18 @@ export default function Home() {
     setIsRecording(false);
 
     if (hasSentChunksRef.current) {
+      const additionalMessage = buildSelectedUnitsMessage();
       console.log('[OrchestratorAPI] 🎤 Audio chunks were sent, ending stream:', {
         sessionId: connection.sessionId,
         recordingDuration: recordingDuration.toFixed(3) + 's',
-        timestamp: timestamp
+        timestamp: timestamp,
+        hasAdditionalMessage: Boolean(additionalMessage),
       });
       setBlobState('thinking');
-      await endStream(connection.sessionId);
+      await endStream(connection.sessionId, additionalMessage);
+      if (additionalMessage) {
+        clearSelectedUnits();
+      }
     } else {
       console.log('[OrchestratorAPI] ⚠️ No audio chunks sent, not ending stream:', {
         sessionId: connection.sessionId,
@@ -411,6 +501,9 @@ export default function Home() {
               >
                 {statusMessages[blob.state]}
               </span>
+              {animatedTranscript && (
+                <p className={styles.transcriptPreview}>{animatedTranscript}</p>
+              )}
             </div>
           </div>
 

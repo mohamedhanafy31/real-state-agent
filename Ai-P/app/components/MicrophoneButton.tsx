@@ -1,7 +1,7 @@
 'use client';
 
 import { useAppStore } from '@/store/useAppStore';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import styles from './MicrophoneButton.module.css';
 
 interface MicrophoneButtonProps {
@@ -12,17 +12,7 @@ interface MicrophoneButtonProps {
 export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButtonProps) {
     const { audio, ui, blob } = useAppStore();
     const [isPressed, setIsPressed] = useState(false);
-    const [isToggleMode, setIsToggleMode] = useState(false);
-
-    useEffect(() => {
-        const checkMode = () => {
-            setIsToggleMode(window.innerWidth >= 768);
-        };
-
-        checkMode();
-        window.addEventListener('resize', checkMode);
-        return () => window.removeEventListener('resize', checkMode);
-    }, []);
+    const isToggleMode = true;
 
     const isSpeaking = blob.state === 'speaking';
     const canInteract = blob.state === 'silent' || blob.state === 'listening';

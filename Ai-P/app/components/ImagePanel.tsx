@@ -78,7 +78,7 @@ export default function ImagePanel() {
     };
 
     return (
-        <aside className={styles.panel}>
+        <aside className={`${styles.panel} ${styles.panelVisible}`}>
             <header className={styles.header}>
                 <div>
                     <p className={styles.panelTitle}>الوحدات المطابقة</p>
@@ -92,13 +92,21 @@ export default function ImagePanel() {
             <section className={styles.unitList}>
                 {displayUnits.map((unit) => {
                     const isSelected = selectedUnitIds.includes(unit.id);
+                    const toggleSelection = () => toggleUnitSelection(unit.id);
                     return (
-                        <button
+                        <article
                             key={unit.id}
-                            type="button"
                             className={`${styles.unitCard} ${isSelected ? styles.unitCardSelected : ''}`}
-                            onClick={() => toggleUnitSelection(unit.id)}
                             aria-pressed={isSelected}
+                            role="button"
+                            tabIndex={0}
+                            onClick={toggleSelection}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    toggleSelection();
+                                }
+                            }}
                         >
                             <div className={styles.unitMedia}>
                                 <img src={unit.image} alt={unit.title} className={styles.unitImage} />
@@ -111,10 +119,7 @@ export default function ImagePanel() {
                                         ))}
                                     </div>
                                 )}
-                                <span
-                                    className={`${styles.selectionToggle} ${isSelected ? styles.selectionToggleActive : ''}`}
-                                    aria-hidden="true"
-                                >
+                                <span className={styles.selectionToggle} aria-hidden="true">
                                     {isSelected ? '✓' : ''}
                                 </span>
                             </div>
@@ -130,8 +135,9 @@ export default function ImagePanel() {
                                                 : `${unit.description.slice(0, DESCRIPTION_PREVIEW_LIMIT)}…`}
                                         </p>
                                         {unit.description.length > DESCRIPTION_PREVIEW_LIMIT && (
-                                            <button
-                                                type="button"
+                                            <span
+                                                role="button"
+                                                tabIndex={0}
                                                 className={styles.moreToggle}
                                                 onClick={() =>
                                                     setExpandedDescriptions((prev) => ({
@@ -139,14 +145,23 @@ export default function ImagePanel() {
                                                         [unit.id]: !prev[unit.id],
                                                     }))
                                                 }
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter' || event.key === ' ') {
+                                                        event.preventDefault();
+                                                        setExpandedDescriptions((prev) => ({
+                                                            ...prev,
+                                                            [unit.id]: !prev[unit.id],
+                                                        }));
+                                                    }
+                                                }}
                                             >
                                                 {expandedDescriptions[unit.id] ? 'عرض أقل' : 'المزيد'}
-                                            </button>
+                                            </span>
                                         )}
                                     </div>
                                 )}
                             </div>
-                        </button>
+                        </article>
                     );
                 })}
             </section>

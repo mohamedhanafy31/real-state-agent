@@ -46,7 +46,13 @@ class TTSClient:
         
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                logger.info(f"Sending TTS request: {text[:50]}... voice={voice_used or 'default'}")
+                safe_text = text.replace("\n", " ").strip()
+                logger.info(
+                    "Sending TTS request (voice=%s, chars=%d): %s",
+                    voice_used or "default",
+                    len(safe_text),
+                    safe_text,
+                )
                 response = await client.post(url, json=payload)
                 response.raise_for_status()
                 

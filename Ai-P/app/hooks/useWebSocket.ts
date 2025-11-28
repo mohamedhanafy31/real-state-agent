@@ -203,6 +203,15 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                         break;
                     }
 
+                    const payloadKeys = Object.keys(message);
+                    if (payloadKeys.length === 0) {
+                        console.warn('[OrchestratorAPI] ⚠️ Empty error payload received from orchestrator');
+                        setErrorMessage('حدث خطأ غير متوقع مع الخادم. حاول مرة أخرى.');
+                        awaitingServerResponseRef.current = false;
+                        setBlobState('silent');
+                        break;
+                    }
+
                     const rawCode = (message as Partial<ErrorMessage>).code;
                     const rawType = (message as Partial<ErrorMessage>).error_type;
                     const rawMessage = (message as Partial<ErrorMessage>).message;

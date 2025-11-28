@@ -85,6 +85,24 @@ class UnitSelector:
 
         self.max_rows = max_rows
         self.model_name = model_name
+        # Load dataset once for rule-based shortcuts
+        try:
+            self._df_cache = pd.read_csv(self.csv_path)
+        except Exception as exc:
+            raise RuntimeError(f"Failed to read CSV at {self.csv_path}: {exc}") from exc
+        if "Code" in self._df_cache.columns:
+            self._normalized_codes = (
+                self._df_cache["Code"]
+                .astype(str)
+                .str.replace(r"\s+", "", regex=True)
+                .str.lower()
+            )
+        else:
+            self._normalized_codes = pd.Series(index=self._df_cache.index, dtype=str)
+        if "Name" in self._df_cache.columns:
+            self._name_strings = self._df_cache["Name"].astype(str).str.strip()
+        else:
+            self._name_strings = pd.Series(index=self._df_cache.index, dtype=str)
 
         try:
             import google.generativeai as genai
@@ -109,6 +127,19 @@ class UnitSelector:
             requested_count = self._extract_requested_count(question)
             # Use the smaller of requested count or max_rows
             effective_max_rows = min(requested_count, self.max_rows) if requested_count else self.max_rows
+
+            explicit_rows = self._match_explicit_units(question, effective_max_rows)
+            if explicit_rows is not None:
+                logger.info(
+                    "Unit selector returning %d explicit matches (bypassing LLM)",
+                    len(explicit_rows),
+                )
+                return UnitSelectorResult(
+                    code="# Explicit selector match",
+                    rows=explicit_rows,
+                    raw_response="EXPLICIT_MATCH",
+                    relevance_score=1.0,
+                )
             
             raw_response = self._generate_code(question)
             cleaned_code = self._extract_code(raw_response)
@@ -432,5 +463,47 @@ class UnitSelector:
         result_df = selected_df.head(limit)
 
         return result_df.to_dict(orient="records")
+
+    def _match_explicit_units(
+        self, question: str, max_rows: Optional[int]
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Return direct matches when question references specific unit codes/IDs."""
+        if not question or self._df_cache.empty:
+            return None
+
+        compact = re.sub(r"\s+", "", question.lower())
+        code_pattern = re.compile(r"([a-z0-9]+/[a-z0-9]+/[a-z0-9]+/[a-z0-9]+)", re.IGNORECASE)
+        explicit_codes = {match.group(1) for match in code_pattern.finditer(compact)}
+
+        number_pattern = re.compile(
+            r"(?:كود|code|id|رقم)\s*(?:وحدة|شقة|الشقة|الشقه|#|بتاعها|هو|هي|:)?\s*(\d{2,})",
+            re.IGNORECASE,
+        )
+        explicit_numbers = {
+            match.group(1).lstrip("0") or match.group(1) for match in number_pattern.finditer(question)
+        }
+
+        if not explicit_codes and not explicit_numbers:
+            return None
+
+        mask = pd.Series(False, index=self._df_cache.index)
+        if explicit_codes and not self._normalized_codes.empty:
+            normalized_targets = {code.lower() for code in explicit_codes}
+            mask |= self._normalized_codes.isin(normalized_targets)
+        if explicit_numbers:
+            if not self._name_strings.empty:
+                mask |= self._name_strings.isin(explicit_numbers)
+            if not self._normalized_codes.empty:
+                endswith_patterns = tuple(f"/{num}" for num in explicit_numbers)
+                mask |= self._normalized_codes.str.endswith(endswith_patterns)
+
+        if not mask.any():
+            return None
+
+        limit = max_rows if max_rows is not None else self.max_rows
+        matches = self._df_cache.loc[mask].head(limit)
+        if matches.empty:
+            return None
+        return matches.replace({np.nan: None}).to_dict(orient="records")
 
 

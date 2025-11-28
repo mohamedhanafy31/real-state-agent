@@ -260,11 +260,6 @@ export default function SlideBar() {
 
     return (
         <div className={styles.slideBar}>
-            {/* Centered Title */}
-            <div className={styles.titleContainer}>
-                <h2 className={styles.title}>HawaBay</h2>
-            </div>
-
             {/* Left edge fade */}
             <div className={styles.edgeFadeLeft}></div>
             

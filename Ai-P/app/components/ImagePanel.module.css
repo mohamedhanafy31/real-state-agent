@@ -14,6 +14,14 @@
     flex-direction: column;
     gap: 16px;
     z-index: var(--z-images);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.panelVisible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 @media (min-width: 1024px) {
@@ -78,12 +86,24 @@
     background: rgba(15, 23, 42, 0.4);
     text-align: left;
     transition: border 160ms ease, background 160ms ease, transform 160ms ease;
+    position: relative;
+    cursor: pointer;
 }
 
 .unitCard:hover {
     border-color: rgba(248, 212, 119, 0.35);
     background: rgba(248, 212, 119, 0.05);
     transform: translateY(-2px);
+}
+
+.unitCardSelected {
+    border-color: rgba(248, 212, 119, 0.5);
+    background: rgba(248, 212, 119, 0.08);
+    box-shadow: 0 10px 30px rgba(248, 212, 119, 0.12);
+}
+
+.unitCard:focus-visible {
+    box-shadow: 0 0 0 2px rgba(248, 212, 119, 0.5);
 }
 
 .unitMedia {
@@ -123,6 +143,31 @@
     background: rgba(15, 23, 42, 0.75);
     border: 1px solid rgba(248, 250, 252, 0.25);
     color: #e2e8f0;
+}
+
+.selectionToggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(248, 250, 252, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: transparent;
+    background: rgba(15, 23, 42, 0.6);
+    transition: all 150ms ease;
+    pointer-events: none;
+}
+
+.unitCardSelected .selectionToggle {
+    background: linear-gradient(135deg, rgba(248, 212, 119, 0.9), rgba(249, 115, 22, 0.9));
+    border-color: rgba(248, 212, 119, 0.9);
+    color: #0f172a;
 }
 
 .unitInfo {
@@ -206,13 +251,23 @@
     .panel {
         position: relative;
         top: auto;
-        max-width: none;
-        margin: 16px auto 24px;
+        max-width: 420px;
+        margin: 12px auto 20px;
+        padding: 16px 18px 24px;
+        overflow-y: auto;
     }
 }
 
 @media (max-width: 767px) {
     .panel {
-        padding: 18px 16px 22px;
+        padding: 14px 14px 20px;
+        border-radius: 16px;
+        max-width: 360px;
+        max-height: 420px;
+        overflow-y: auto;
+    }
+
+    .unitList {
+        max-height: 320px;
     }
 }
