@@ -23,6 +23,6 @@ RUN mkdir -p logs
 ENV PORT=8080
 EXPOSE 8080
 
-# Run the application (respects PORT env var for Cloud Run, defaults to 8030 for local)
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8030}"]
+# Run the application using Python wrapper that reads PORT env var
+CMD ["python", "app/start.py"]
 
