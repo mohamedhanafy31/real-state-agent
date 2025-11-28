@@ -44,12 +44,14 @@ ENV/
 notebooks/
 
 # Data files (exclude large data from image)
-data/embeddings/*.faiss
-data/embeddings/*.pkl
-data/embeddings/*.json
+# INCLUDE embeddings in Docker image - small files (~65KB) needed for production
+# data/embeddings/*.faiss   # INCLUDE: embeddings index (45KB)
+# data/embeddings/*.pkl     # INCLUDE: chunks (20KB)
+data/embeddings/*.json      # Still exclude JSON (not needed for runtime)
 data/processed/*
 data/generated_images/
 data/raw/*
+
 
 # Logs
 *.log

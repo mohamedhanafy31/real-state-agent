@@ -163,6 +163,8 @@ if [[ -n "${RAG_PID}" ]]; then
   wait "${RAG_PID}"
   RAG_URL=$(deploy_service "rag-api" "${RAG_IMAGE}" \
     --memory=4Gi \
+    --cpu=2 \
+    --min-instances=1 \
     --set-env-vars "GEMINI_API_KEY=${GEMINI_API_KEY}" \
     --set-env-vars "LOG_LEVEL=INFO" \
     --set-env-vars "CORS_ORIGINS=*")
@@ -185,6 +187,8 @@ if [[ -n "${ORCH_BUILD_PID}" ]]; then
   fi
   
   orch_deploy_args=(
+    --memory=2Gi
+    --cpu=2
     --set-env-vars "RAG_API_URL=${RAG_URL}"
     --set-env-vars "ASR_API_URL=${ASR_API_URL}"
     --set-env-vars "TTS_API_URL=${TTS_API_URL}"
@@ -214,6 +218,8 @@ if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
     FRONTEND_BUILD_ID="$(start_build "Ai-P" "${FRONTEND_IMAGE}")"
     wait_for_build "${FRONTEND_BUILD_ID}" "Frontend"
     frontend_deploy_args_fallback=(
+      --memory=4Gi
+      --cpu=2
       --set-env-vars "NEXT_PUBLIC_ORCHESTRATOR_URL=${ORCH_URL}"
       --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}"
     )
@@ -241,6 +247,8 @@ if [[ "${DEPLOY_FRONTEND}" == "1" || "${DEPLOY_FRONTEND}" == "true" ]]; then
     
     echo "==> Deploying frontend Cloud Run service"
     frontend_deploy_args=(
+      --memory=4Gi
+      --cpu=2
       --set-env-vars "NEXT_PUBLIC_ORCHESTRATOR_URL=${ORCH_URL}"
       --set-env-vars "NEXT_PUBLIC_WS_URL=${ORCH_WS_URL}"
     )
