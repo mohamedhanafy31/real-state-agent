@@ -61,6 +61,7 @@ const AUDIO_CHUNK_SEND_THROTTLE_MS = 50; // Throttle audio chunk sends to avoid 
 
 interface UseWebSocketOptions {
     onTTSAudio?: (base64Audio: string) => void;
+    onNewStreamStart?: () => void; // Called when a new response stream starts (rag_metadata received)
 }
 
 export function useWebSocket(options: UseWebSocketOptions = {}) {
@@ -72,6 +73,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     const messageCountRef = useRef({ sent: 0, received: 0 });
     const audioChunkStatsRef = useRef({ count: 0, totalSize: 0, firstChunkTime: null as number | null, lastChunkTime: null as number | null });
     const onTTSAudioRef = useRef(options.onTTSAudio);
+    const onNewStreamStartRef = useRef(options.onNewStreamStart);
     const audioChunkQueueRef = useRef<Array<{base64Audio: string, sessionId: string, timestamp: number}>>([]);
     const audioChunkThrottleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const ttsQueueInfoRef = useRef<{queued: number, nextSeq: number} | null>(null);
@@ -82,7 +84,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     // Update ref when options change, but don't recreate callbacks
     useEffect(() => {
         onTTSAudioRef.current = options.onTTSAudio;
-    }, [options.onTTSAudio]);
+        onNewStreamStartRef.current = options.onNewStreamStart;
+    }, [options.onTTSAudio, options.onNewStreamStart]);
 
     const {
         setConnectionStatus,
@@ -144,6 +147,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                         structured_units_count: message.structured_units?.length || 0,
                         timestamp: receiveTime
                     });
+                    
+                    // Notify that a new stream is starting - this resets interrupt flags
+                    if (onNewStreamStartRef.current) {
+                        onNewStreamStartRef.current();
+                    }
+                    
                     clearResponse();
                     setIsStreaming(true);
                     clearGallery();

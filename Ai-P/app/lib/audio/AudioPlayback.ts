@@ -13,6 +13,7 @@ export class AudioPlayback {
     private currentAnalysisFrameId: number | null = null;
     private currentAnalyzingSegmentIndex: number | null = null;
     private playbackEndTimeoutId: NodeJS.Timeout | null = null;
+    private isInterrupted = false; // Track if playback was explicitly interrupted
 
     private onPlaybackStartCallback: (() => void) | null = null;
     private onPlaybackEndCallback: (() => void) | null = null;
@@ -22,6 +23,8 @@ export class AudioPlayback {
         try {
             this.audioContext = new AudioContext({ sampleRate: 24000 });
             this.analyzer = new AudioAnalyzer(this.audioContext);
+            // Reset interrupt flag on initialization
+            this.isInterrupted = false;
             return true;
         } catch (error) {
             console.error('[AudioPlayback] Failed to initialize:', error);
@@ -36,7 +39,13 @@ export class AudioPlayback {
         }
     }
 
-    queueSegment(base64Audio: string): void {
+    queueSegment(base64Audio: string): boolean {
+        // If playback was explicitly interrupted, discard incoming chunks
+        if (this.isInterrupted) {
+            console.log('[AudioPlayback] 🗑️ Discarding TTS chunk - playback was interrupted');
+            return false;
+        }
+        
         const arrayBuffer = base64ToArrayBuffer(base64Audio);
         this.audioQueue.push(arrayBuffer);
         
@@ -51,6 +60,8 @@ export class AudioPlayback {
             // Continue playing the new segment - ensure state stays speaking
             if (!this.isPlaying) {
                 this.isPlaying = true;
+                // Clear interrupt flag since we're starting playback again
+                this.isInterrupted = false;
                 // Notify that playback is continuing (to keep state as speaking)
                 if (this.onPlaybackStartCallback) {
                     this.onPlaybackStartCallback();
@@ -62,9 +73,13 @@ export class AudioPlayback {
             // Auto-start if we have at least 2 segments (buffering) or if this is the first segment
             if (this.audioQueue.length >= 2 || this.audioQueue.length === 1) {
                 this.isPlaying = true;
+                // Clear interrupt flag since we're starting playback
+                this.isInterrupted = false;
                 this.playNext();
             }
         }
+        
+        return true; // Chunk was successfully queued
     }
 
     private async playNext(): Promise<void> {
@@ -102,6 +117,9 @@ export class AudioPlayback {
             this.currentSegmentStartTime = performance.now();
             this.analysisSamples = []; // Reset analysis samples for this segment
 
+            // Clear interrupt flag since we're actively playing
+            this.isInterrupted = false;
+            
             // Notify that playback has started (for setting blob state to speaking)
             if (this.onPlaybackStartCallback) {
                 this.onPlaybackStartCallback();
@@ -255,7 +273,11 @@ export class AudioPlayback {
     }
 
     stop(): void {
+        const wasPlaying = this.isPlaying;
         this.isPlaying = false;
+        
+        // Mark as interrupted so future chunks are discarded
+        this.isInterrupted = true;
 
         // Cancel any pending playback end timeout
         if (this.playbackEndTimeoutId) {
@@ -278,9 +300,18 @@ export class AudioPlayback {
             this.currentSource = null;
         }
 
+        // Clear audio queue to discard any pending TTS chunks
+        const queuedChunks = this.audioQueue.length;
         this.audioQueue = [];
         this.currentAnalyzingSegmentIndex = null;
         this.analysisSamples = [];
+        
+        // Log interrupt if playback was active
+        if (wasPlaying) {
+            console.log('[AudioPlayback] 🛑 Playback interrupted and stopped', {
+                queuedChunksDiscarded: queuedChunks
+            });
+        }
     }
 
     cleanup(): void {
@@ -303,5 +334,13 @@ export class AudioPlayback {
 
     isInitialized(): boolean {
         return this.audioContext !== null;
+    }
+
+    /**
+     * Reset the interrupt flag to allow new TTS chunks to be queued.
+     * This should be called when starting a new TTS stream.
+     */
+    resetInterrupt(): void {
+        this.isInterrupted = false;
     }
 }

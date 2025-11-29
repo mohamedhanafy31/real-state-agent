@@ -334,6 +334,9 @@ def normalize_tts_text(text: str) -> str:
     normalized = normalized.replace("|", " ")
     normalized = normalized.replace(":", " : ")
     
+    # Replace mathematical symbols with Arabic words for better TTS pronunciation
+    normalized = normalized.replace("≈", " تقريبا ")
+    
     # Normalize Arabic-Indic digits and separators to ASCII equivalents
     normalized = normalized.translate(ARABIC_DIGIT_TRANSLATION)
     

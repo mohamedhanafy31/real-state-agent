@@ -19,10 +19,12 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
     // Button should be enabled when:
     // 1. Currently recording (to allow stopping)
     // 2. State is silent and no audio is playing (to allow starting)
-    const canInteract = audio.isRecording || (blob.state === 'silent' && !isAudioPlaying);
+    // 3. State is speaking (to allow interrupting AI speech)
+    const canInteract = audio.isRecording || (blob.state === 'silent' && !isAudioPlaying) || blob.state === 'speaking';
 
     const handlePointerDown = () => {
-        if (!ui.micButtonEnabled || isToggleMode || isSpeaking || isAudioPlaying || !canInteract) {
+        // Allow interrupt during speaking state
+        if (!ui.micButtonEnabled || isToggleMode || (!canInteract && !isSpeaking)) {
             return;
         }
         setIsPressed(true);
@@ -30,7 +32,8 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
     };
 
     const handlePointerUp = () => {
-        if (!ui.micButtonEnabled || isToggleMode || isSpeaking || isAudioPlaying || !canInteract) {
+        // Allow interrupt during speaking state
+        if (!ui.micButtonEnabled || isToggleMode || (!canInteract && !isSpeaking)) {
             return;
         }
         setIsPressed(false);
@@ -45,8 +48,15 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
             return;
         }
         
+        // Allow interrupt during speaking state
+        if (isSpeaking) {
+            setIsPressed(true);
+            onPress();
+            return;
+        }
+        
         // For starting recording, check all conditions
-        if (!ui.micButtonEnabled || !isToggleMode || isSpeaking || isAudioPlaying || !canInteract) {
+        if (!ui.micButtonEnabled || !isToggleMode || isAudioPlaying || !canInteract) {
             return;
         }
 
@@ -57,15 +67,16 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
     const getButtonClass = () => {
         let className = styles.micButton;
         if ((isPressed || (isToggleMode && audio.isRecording)) && audio.isRecording) className += ` ${styles.recording}`;
-        // Disable button if not enabled, or if (speaking/playing/!canInteract) AND not recording
-        const shouldDisable = !ui.micButtonEnabled || ((isSpeaking || isAudioPlaying || !canInteract) && !audio.isRecording);
+        // Disable button if not enabled, or if (playing/!canInteract) AND not recording AND not speaking
+        // Note: speaking state is now allowed for interrupt, so we don't disable for that
+        const shouldDisable = !ui.micButtonEnabled || ((isAudioPlaying || !canInteract) && !audio.isRecording && !isSpeaking);
         if (shouldDisable) className += ` ${styles.disabled}`;
         if (ui.errorMessage) className += ` ${styles.error}`;
         return className;
     };
 
     const getLabel = () => {
-        if (isSpeaking) return 'الذكاء الاصطناعي يتحدث...';
+        if (isSpeaking) return 'إيقاف الصوت'; // Stop audio / Interrupt
         if (blob.state === 'listening') return 'جاري الاستماع...';
         if (blob.state === 'thinking') return 'جاري المعالجة...';
         return isToggleMode ? 'اضغط للبدء / الإيقاف' : 'اضغط مع الاستمرار للتحدث';
@@ -83,7 +94,7 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
                     }
                 }}
                 onClick={handleClick}
-                disabled={!ui.micButtonEnabled || ((isSpeaking || isAudioPlaying || !canInteract) && !audio.isRecording)}
+                disabled={!ui.micButtonEnabled || ((isAudioPlaying || !canInteract) && !audio.isRecording && !isSpeaking)}
                 aria-label={getLabel()}
                 role="button"
                 tabIndex={0}
@@ -98,6 +109,9 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
                     strokeLinejoin="round"
                 >
                     {audio.isRecording && isToggleMode ? (
+                        <rect x="6" y="6" width="12" height="12" rx="2" />
+                    ) : isSpeaking ? (
+                        // Stop/Interrupt icon when speaking
                         <rect x="6" y="6" width="12" height="12" rx="2" />
                     ) : (
                         <>

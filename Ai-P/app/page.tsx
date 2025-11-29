@@ -42,6 +42,14 @@ export default function Home() {
   const { connect, sendAudioChunk, endStream } = useWebSocket({
     onTTSAudio: (base64Audio) => {
       const receiveTime = getTimestamp();
+      const currentState = useAppStore.getState();
+      
+      // If we're in listening state, user has interrupted - discard this TTS chunk
+      if (currentState.blob.state === 'listening' || currentState.audio.isRecording) {
+        console.log('[OrchestratorAPI] 🗑️ Discarding TTS audio - user interrupted and is now recording');
+        return;
+      }
+      
       console.log('[OrchestratorAPI] 🎵 TTS audio received in page component:', {
         audioSize: base64Audio.length,
         audioSizeKB: (base64Audio.length / 1024).toFixed(2),
@@ -50,12 +58,28 @@ export default function Home() {
       });
 
       if (audioPlaybackRef.current) {
-        audioPlaybackRef.current.queueSegment(base64Audio);
-        setBlobState('speaking');
-        setIsPlaying(true);
-        console.log('[OrchestratorAPI] ✅ TTS audio queued for playback');
+        // Don't reset interrupt flag here - it should only be reset when a new stream starts (rag_metadata)
+        // This ensures chunks from interrupted streams continue to be discarded
+        
+        const wasQueued = audioPlaybackRef.current.queueSegment(base64Audio);
+        if (wasQueued) {
+          // Only update state if chunk was actually queued (not discarded)
+          setBlobState('speaking');
+          setIsPlaying(true);
+          console.log('[OrchestratorAPI] ✅ TTS audio queued for playback');
+        } else {
+          console.log('[OrchestratorAPI] 🗑️ TTS audio chunk discarded (interrupted stream)');
+        }
       } else {
         console.warn('[OrchestratorAPI] ⚠️ TTS audio received but audioPlayback not initialized');
+      }
+    },
+    onNewStreamStart: () => {
+      // Reset interrupt flag when a new response stream starts
+      // This allows TTS chunks from the new stream to be played
+      if (audioPlaybackRef.current) {
+        audioPlaybackRef.current.resetInterrupt();
+        console.log('[OrchestratorAPI] 🔄 New stream started - interrupt flag reset');
       }
     },
   });
@@ -230,14 +254,54 @@ export default function Home() {
     };
   }, [content.transcript]);
 
+  // Handle interrupt button (stop TTS playback and set to silent)
+  const handleInterrupt = async () => {
+    const storeState = useAppStore.getState();
+    const currentConnection = storeState.connection;
+    
+    console.log('[OrchestratorAPI] 🛑 Interrupting AI speech');
+    
+    // Immediately stop TTS playback
+    if (audioPlaybackRef.current) {
+      audioPlaybackRef.current.stop();
+      console.log('[OrchestratorAPI] ✅ TTS playback stopped');
+    }
+    
+    // Clear any pending playback end callbacks by resetting state
+    setIsPlaying(false);
+    
+    // Clear frequency data to stop blob animation from stale TTS audio
+    setFrequencyData([0, 0, 0, 0, 0]);
+    
+    // Set state to silent (not listening - user needs to click again to start recording)
+    setBlobState('silent');
+    
+    // End the stream with orchestrator if we have an active session
+    if (currentConnection.sessionId && currentConnection.status === 'connected') {
+      console.log('[OrchestratorAPI] 📤 Ending stream due to interrupt:', {
+        sessionId: currentConnection.sessionId
+      });
+      await endStream(currentConnection.sessionId);
+    }
+    
+    console.log('[OrchestratorAPI] ✅ Interrupt complete - state set to silent, mic button enabled');
+  };
+
   // Handle mic button press (start recording)
   const handleMicPress = async () => {
+    const storeState = useAppStore.getState();
+    
+    // If we're in speaking state, interrupt instead of starting recording
+    if (storeState.blob.state === 'speaking' || storeState.audio.isPlaying) {
+      await handleInterrupt();
+      return; // Don't start recording after interrupt
+    }
+    
     if (!audioCaptureRef.current) {
       console.warn('[OrchestratorAPI] ⚠️ Cannot start recording - audio capture not initialized');
       return;
     }
-
-    const storeState = useAppStore.getState();
+    
     if (storeState.audio.isRecording || isStartingRecordingRef.current) {
       console.log('[OrchestratorAPI] ⏳ Recording already in progress or starting, ignoring press');
       return;

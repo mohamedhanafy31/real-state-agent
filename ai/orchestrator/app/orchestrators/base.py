@@ -1,6 +1,7 @@
 """
 Base orchestrator class.
 """
+import asyncio
 from abc import ABC, abstractmethod
 from collections import deque
 from typing import Dict, Any, Optional, List, Tuple, Deque
@@ -195,6 +196,7 @@ class BaseOrchestrator(ABC):
         text: str,
         language: str = "ar",
         sentences: Optional[List[str]] = None,
+        interrupt_event: Optional[asyncio.Event] = None,
     ) -> bool:
         """
         Synthesize text to speech and send audio chunks to client.
@@ -220,6 +222,11 @@ class BaseOrchestrator(ABC):
         
         try:
             for i, sentence in enumerate(sentences):
+                # Check if interrupted before processing next sentence
+                if interrupt_event and interrupt_event.is_set():
+                    logger.info(f"Session {session_id} TTS interrupted at sentence {i+1}/{len(sentences)}")
+                    break
+                
                 try:
                     tts_input = normalize_tts_text(sentence)
                     if not tts_input:
@@ -229,6 +236,12 @@ class BaseOrchestrator(ABC):
                         text=tts_input,
                         voice_used=preferred_voice
                     )
+                    
+                    # Check again after synthesis (interrupt might have happened during synthesis)
+                    if interrupt_event and interrupt_event.is_set():
+                        logger.info(f"Session {session_id} TTS interrupted after synthesizing sentence {i+1}")
+                        break
+                    
                     tts_queue.append({
                         "seq": i,
                         "audio_base64": audio_bytes_to_base64(audio_bytes),
@@ -252,7 +265,12 @@ class BaseOrchestrator(ABC):
                         context="sending TTS queue update"
                     )
                     
-                    await self._drain_tts_queue(websocket, session_id, tts_queue, preferred_voice)
+                    # Check before draining queue
+                    if interrupt_event and interrupt_event.is_set():
+                        logger.info(f"Session {session_id} TTS interrupted before draining queue")
+                        break
+                    
+                    await self._drain_tts_queue(websocket, session_id, tts_queue, preferred_voice, interrupt_event)
                     successful_chunks += 1
                     logger.debug(f"Queued TTS audio chunk {i+1}/{len(sentences)}")
                 
@@ -285,9 +303,16 @@ class BaseOrchestrator(ABC):
         websocket: WebSocket,
         session_id: str,
         queue: Deque[Dict[str, Any]],
-        voice_used: str
+        voice_used: str,
+        interrupt_event: Optional[asyncio.Event] = None
     ):
         while queue:
+            # Check if interrupted before sending each chunk
+            if interrupt_event and interrupt_event.is_set():
+                logger.info(f"Session {session_id} TTS interrupted, discarding {len(queue)} queued chunks")
+                queue.clear()
+                break
+            
             chunk = queue.popleft()
             logger.debug(
                 "Session %s sending TTS chunk seq=%d remaining=%d",

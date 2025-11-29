@@ -322,6 +322,63 @@ class VoiceOrchestrator(BaseOrchestrator):
                 "stage": "tts_processing"
             })
             
+            # Create interrupt flag and listener task for TTS phase
+            tts_interrupted = asyncio.Event()
+            interrupt_listener_task = None
+            pending_message = None
+            
+            async def listen_for_interrupt():
+                """Listen for end_stream messages during TTS phase to interrupt processing."""
+                nonlocal pending_message
+                try:
+                    while not tts_interrupted.is_set():
+                        try:
+                            # Try to receive a message with a short timeout
+                            # This allows us to check for interrupts without blocking too long
+                            message_data = await asyncio.wait_for(
+                                websocket.receive(),
+                                timeout=0.1
+                            )
+                            
+                            # Parse JSON if it's a text message
+                            if "text" in message_data:
+                                try:
+                                    import json
+                                    message = json.loads(message_data["text"])
+                                    msg_type = message.get("type")
+                                    
+                                    if msg_type == "end_stream":
+                                        logger.info(f"Session {session_id} interrupted during TTS phase")
+                                        tts_interrupted.set()
+                                        break
+                                    elif msg_type == "start_session":
+                                        # Ignore duplicate start_session
+                                        continue
+                                    else:
+                                        # Store unexpected messages to handle later
+                                        pending_message = message
+                                        logger.debug(f"Received message during TTS: {msg_type}")
+                                except Exception as e:
+                                    logger.debug(f"Error parsing message during TTS interrupt check: {e}")
+                                    continue
+                        except asyncio.TimeoutError:
+                            # Timeout is expected - continue checking
+                            continue
+                        except Exception as e:
+                            # If client disconnected or other error, stop listening
+                            error_str = str(e).lower()
+                            if "disconnect" in error_str or "closed" in error_str or "connection" in error_str:
+                                logger.debug(f"Client disconnected during TTS interrupt listener: {e}")
+                                break
+                            else:
+                                logger.debug(f"Error in interrupt listener: {e}")
+                                continue
+                except Exception as e:
+                    logger.debug(f"Interrupt listener stopped: {e}")
+            
+            # Start listening for interrupts during TTS
+            interrupt_listener_task = asyncio.create_task(listen_for_interrupt())
+            
             tts_success = False
             try:
                 tts_success = await self.send_tts_audio(
@@ -329,15 +386,27 @@ class VoiceOrchestrator(BaseOrchestrator):
                     session_id,
                     full_text,
                     language=language,
-                    sentences=tts_sentences
+                    sentences=tts_sentences,
+                    interrupt_event=tts_interrupted
                 )
             except Exception as e:
                 logger.error(f"TTS processing failed: {e}")
                 tts_success = False
+            finally:
+                # Cancel interrupt listener
+                if interrupt_listener_task:
+                    interrupt_listener_task.cancel()
+                    with contextlib.suppress(asyncio.CancelledError, Exception):
+                        await interrupt_listener_task
             
             # Phase 5: Close session
-            # Use different reason if TTS completely failed
-            close_reason = "completed" if tts_success else "tts_error"
+            # Use different reason if TTS was interrupted, failed, or completed
+            if tts_interrupted.is_set():
+                close_reason = "interrupted"
+            elif tts_success:
+                close_reason = "completed"
+            else:
+                close_reason = "tts_error"
             await self._close_session(websocket, session_id, close_reason)
             
         except Exception as e:
