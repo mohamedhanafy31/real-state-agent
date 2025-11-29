@@ -49,7 +49,7 @@ notebooks/
 # data/embeddings/*.pkl     # INCLUDE: chunks (20KB)
 data/embeddings/*.json      # Still exclude JSON (not needed for runtime)
 data/processed/*
-data/generated_images/
+# data/generated_images/    # INCLUDE: unit images (~39MB) needed for production
 data/raw/*
 
 
