@@ -230,6 +230,12 @@ class LLMGenerator:
             usage = row.get("Usage") or row.get("usage") or ""
             project = row.get("Project") or row.get("project") or ""
             floor = row.get("Floor") or row.get("floor") or ""
+            bedrooms = row.get("Bedrooms") or row.get("bedrooms") or ""
+            bathrooms = row.get("Bathrooms") or row.get("bathrooms") or ""
+            garden = row.get("Garden") or row.get("garden") or ""
+            roof = row.get("Roof") or row.get("roof") or ""
+            description = row.get("Description") or row.get("description") or ""
+
             snippet = f"- الكود: {code} | السعر: {price} | المساحة: {area}"
             if usage:
                 snippet += f" | النوع: {usage}"
@@ -237,6 +243,26 @@ class LLMGenerator:
                 snippet += f" | الدور: {floor}"
             if project:
                 snippet += f" | المشروع: {project}"
+            if bedrooms:
+                snippet += f" | غرف: {bedrooms}"
+            if bathrooms:
+                snippet += f" | حمامات: {bathrooms}"
+            # Highlight outdoor spaces briefly
+            extra_features = []
+            if garden:
+                extra_features.append("جاردن")
+            if roof:
+                extra_features.append("روف")
+            if extra_features:
+                snippet += " | مميزات خارجية: " + " + ".join(extra_features)
+
+            # Add a short trimmed description so the model can infer more properties
+            if description:
+                short_desc = str(description).strip()
+                if len(short_desc) > 220:
+                    short_desc = short_desc[:220].rstrip() + "..."
+                snippet += f"\n  وصف مختصر: {short_desc}"
+
             lines.append(snippet)
 
         formatted = "\n".join(lines)
