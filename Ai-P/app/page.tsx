@@ -9,7 +9,6 @@ import SlideBar from '@/components/SlideBar';
 import BlobCanvas from '@/components/AnimatedBlob';
 import MicrophoneButton from '@/components/MicrophoneButton';
 import ImagePanel from '@/components/ImagePanel';
-import UserInfoModal, { UserInfo } from '@/components/UserInfoModal';
 import type { BlobState } from '@/types';
 import styles from './page.module.css';
 
@@ -70,18 +69,6 @@ export default function Home() {
   const [micPermission, setMicPermission] = useState<'unknown' | PermissionState>('unknown');
   const permissionStatusRef = useRef<PermissionStatus | null>(null);
   const [permissionError, setPermissionError] = useState<string | null>(null);
-  const [showUserModal, setShowUserModal] = useState(false);
-
-  // Check if user has already submitted info
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hasSubmitted = localStorage.getItem('userInfoSubmitted');
-      if (!hasSubmitted) {
-        // Show modal after a short delay for better UX
-        setTimeout(() => setShowUserModal(true), 1500);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -528,16 +515,6 @@ export default function Home() {
           </div>
         )}
       </main>
-
-      {/* User Info Modal */}
-      <UserInfoModal
-        isOpen={showUserModal}
-        onClose={() => setShowUserModal(false)}
-        onSubmit={(userInfo: UserInfo) => {
-          console.log('User info submitted:', userInfo);
-          setShowUserModal(false);
-        }}
-      />
     </div>
   );
 }
