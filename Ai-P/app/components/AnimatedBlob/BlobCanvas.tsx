@@ -122,6 +122,20 @@ export default function BlobCanvas() {
         mainClockRef.current = clock; // Store clock reference for transitions
 
         const animate = () => {
+            // Guard: Exit if resources have been disposed (component unmounted)
+            if (!material || !mesh || !renderer || !camera || !scene) {
+                return;
+            }
+
+            // Additional guard: Check if Three.js objects are still valid
+            try {
+                if (material.uniforms === undefined) {
+                    return;
+                }
+            } catch {
+                return;
+            }
+
             // Get current state from store directly (not from closure) to avoid stale values
             const currentStoreState = useAppStore.getState().blob.state;
             const elapsedTime = clock.getElapsedTime();
@@ -169,30 +183,30 @@ export default function BlobCanvas() {
                 // SPEAKING state: responds to voice activity with base animation
                 else if (currentStoreState === 'speaking') {
                     const frequencies = frequencyRef.current;
-                    
+
                     // Base breathing animation (same as silent for consistency)
                     const breath1 = Math.sin(elapsedTime * 0.8) * 0.04;
                     const breath2 = Math.sin(elapsedTime * 1.2 + 1.0) * 0.02;
                     const baseScale = 0.96;
                     const baseNoise = 0.18;
                     const baseNoiseVariation = Math.sin(elapsedTime * 0.3) * 0.03;
-                    
+
                     if (frequencies && frequencies.length > 0) {
                         // Calculate average activity from frequency data
                         const avgActivity = frequencies.reduce((sum, val) => sum + (val || 0), 0) / frequencies.length;
                         const maxActivity = Math.max(...frequencies.map(f => f || 0));
-                        
+
                         // Apply voice activity to scale (adds to base breathing)
                         // Scale variation: up to 30% based on average activity (increased for bigger effect)
                         const audioScaleVariation = avgActivity * 0.30;
                         targetScale = baseScale + breath1 + breath2 + audioScaleVariation;
-                        
+
                         // Apply voice activity to noise strength (adds to base variation)
                         // Noise variation: up to 0.35 additional based on max activity (increased for bigger effect)
                         // Range: 0.18-0.21 (base) + 0-0.35 (audio) = 0.18-0.56
                         const audioNoiseVariation = maxActivity * 0.35;
                         targetNoiseStrength = baseNoise + baseNoiseVariation + audioNoiseVariation;
-                        
+
                         targetListeningState = 0.0;
                     } else {
                         // No frequency data - use base animation only (same as silent)
@@ -287,7 +301,7 @@ export default function BlobCanvas() {
 
         // Get current state from store to avoid stale values
         const currentState = useAppStore.getState().blob.state;
-        
+
         // SILENT and LISTENING states: use main blob (transform properties only)
         if (currentState === 'silent' || currentState === 'listening') {
             mainBlob.visible = true;
@@ -295,7 +309,7 @@ export default function BlobCanvas() {
             // Clean up any circles from previous states
             circlesRef.current.forEach(circle => scene.remove(circle));
             circlesRef.current = [];
-            
+
             // Clean up split pieces when leaving thinking state
             splitPiecesRef.current.forEach(piece => scene.remove(piece));
             splitPiecesRef.current = [];
@@ -313,7 +327,7 @@ export default function BlobCanvas() {
             // Clear any existing circles (shouldn't be any, but just in case)
             circlesRef.current.forEach(circle => scene.remove(circle));
             circlesRef.current = [];
-            
+
             // DO NOT remove split pieces here - they should already be visible from the split animation
             // They will be animated by the thinking animation loop
             // Only remove them if we're NOT in a split transition (to avoid race conditions)
@@ -331,7 +345,7 @@ export default function BlobCanvas() {
             // Clean up any circles (not used in speaking mode anymore)
             circlesRef.current.forEach(circle => scene.remove(circle));
             circlesRef.current = [];
-            
+
             // Clean up any remaining split pieces (should be cleaned up by merge animation, but just in case)
             splitPiecesRef.current.forEach(piece => scene.remove(piece));
             splitPiecesRef.current = [];
@@ -351,20 +365,20 @@ export default function BlobCanvas() {
         const storeState = useAppStore.getState().blob.state;
         const prevState = blobStateRef.current;
         const newState = storeState; // Use store state instead of potentially stale blob.state
-        
+
         if (prevState !== newState) {
             // State changed
         }
-        
+
         blobStateRef.current = newState;
-        
+
         // Track when thinking mode starts
         if (newState === 'thinking' && prevState !== 'thinking') {
             // We'll use the clock's elapsed time, so we need to track it in the animation loop
             // For now, set a flag that will be used in the animation loop
             thinkingStartTimeRef.current = 0; // Will be set in animation loop
         }
-        
+
         // Immediately resize canvas when state changes
         if (rendererRef.current && cameraRef.current) {
             const baseSize = getBlobSize();
@@ -418,13 +432,13 @@ export default function BlobCanvas() {
         const isListeningTransition =
             (prevState === 'silent' && currentState === 'listening') ||
             (prevState === 'listening' && currentState === 'silent');
-        
+
         // LISTENING → THINKING transition: Split blob into 6 pieces
         const isSplitTransition = prevState === 'listening' && currentState === 'thinking';
-        
+
         // THINKING → SPEAKING transition: Merge 6 pieces back into one blob
         const isMergeTransition = prevState === 'thinking' && currentState === 'speaking';
-        
+
         // Reset transition flag if not in a listening, split, or merge transition
         if (!isListeningTransition && !isSplitTransition && !isMergeTransition) {
             isTransitioningRef.current = false;
@@ -442,20 +456,20 @@ export default function BlobCanvas() {
             const renderer = rendererRef.current;
             const scene = sceneRef.current;
             const camera = cameraRef.current;
-            
+
             if (!material || !mesh || !renderer || !scene || !camera) {
                 prevStateRef.current = currentState;
                 return;
             }
-            
+
             // Smooth morph transition over 1 second - transforms properties only
             const duration = 1000;
             const startTime = performance.now();
             isTransitioningRef.current = true;
-            
+
             // Helper function for timestamped logging (disabled for silent/listening transitions)
             const logWithTime = (..._args: unknown[]) => undefined;
-            
+
             // Transform properties:
             // 1. Color: gradient (0) → unified color (1) via uListeningState
             const startListening = material.uniforms.uListeningState.value;
@@ -475,7 +489,7 @@ export default function BlobCanvas() {
             const startRotationX = mesh.rotation.x;
             const targetRotationY = currentState === 'listening' ? 0 : startRotationY;
             const targetRotationX = currentState === 'listening' ? 0 : startRotationX;
-            
+
             // Log initial state
             logWithTime(`Starting ${prevState} → ${currentState} transition`);
             logWithTime('Initial state values:', {
@@ -502,13 +516,13 @@ export default function BlobCanvas() {
             let lastLoggedProgress = -1;
             let lastRenderLogTime = 0;
             const logMilestones = [0, 0.25, 0.5, 0.75, 1.0];
-            
+
             const animateTransition = (time: number) => {
                 const elapsed = getElapsedTime();
                 const progress = Math.min((time - startTime) / duration, 1);
                 // Smooth easing function for natural transition
-                const eased = progress < 0.5 
-                    ? 2 * progress * progress 
+                const eased = progress < 0.5
+                    ? 2 * progress * progress
                     : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
                 // Update time uniforms to keep shader animations running
@@ -522,7 +536,7 @@ export default function BlobCanvas() {
                     eased
                 );
                 material.uniforms.uListeningState.value = newListeningState;
-                
+
                 // Update shape transition (irregular ↔ perfect circle)
                 const newNoiseStrength = THREE.MathUtils.lerp(
                     startNoise,
@@ -530,7 +544,7 @@ export default function BlobCanvas() {
                     eased
                 );
                 material.uniforms.uNoiseStrength.value = newNoiseStrength;
-                
+
                 // Update scale transition (breathing stops smoothly)
                 const newScale = THREE.MathUtils.lerp(startScale, targetScale, eased);
                 mesh.scale.setScalar(newScale);
@@ -540,7 +554,7 @@ export default function BlobCanvas() {
                 const newRotationX = THREE.MathUtils.lerp(startRotationX, targetRotationX, eased);
                 mesh.rotation.y = newRotationY;
                 mesh.rotation.x = newRotationX;
-                
+
                 // Log at milestones (0%, 25%, 50%, 75%, 100%)
                 const currentMilestone = logMilestones.find(m => progress >= m && lastLoggedProgress < m);
                 if (currentMilestone !== undefined) {
@@ -586,7 +600,7 @@ export default function BlobCanvas() {
                         rotationY: mesh.rotation.y.toFixed(3),
                         rotationX: mesh.rotation.x.toFixed(3)
                     });
-                    
+
                     isTransitioningRef.current = false;
                     transitionFrameRef.current = null;
                     // Ensure final values are set
@@ -628,7 +642,7 @@ export default function BlobCanvas() {
             const renderer = rendererRef.current;
             const scene = sceneRef.current;
             const camera = cameraRef.current;
-            
+
             if (!material || !mainBlob || !renderer || !scene || !camera) {
                 prevStateRef.current = currentState;
                 return;
@@ -646,7 +660,7 @@ export default function BlobCanvas() {
             const circleSize = 0.3; // Smaller blobs
             const spacing = 1.8; // Reduced spacing between pieces
             const targetPositions: THREE.Vector3[] = [];
-            
+
             // Calculate positions for 6 pieces centered around origin
             for (let i = 0; i < 6; i++) {
                 const targetX = (i - 2.5) * spacing; // -4.5, -2.7, -0.9, 0.9, 2.7, 4.5
@@ -655,12 +669,12 @@ export default function BlobCanvas() {
 
             // Store initial main blob scale for animation
             const initialMainScale = mainBlob.scale.x;
-            
+
             // Starting color (purple from listening state)
             const startColor = new THREE.Color(0x672793);
             // Target color (black)
             const targetColor = new THREE.Color(0x000000);
-            
+
             for (let i = 0; i < 6; i++) {
                 // Use a perfect sphere geometry to ensure perfect circles (not ovals)
                 const pieceGeometry = new THREE.SphereGeometry(circleSize, 32, 32);
@@ -672,20 +686,20 @@ export default function BlobCanvas() {
                     metalness: 0.0,
                     roughness: 0.5,
                 });
-                
+
                 const piece = new THREE.Mesh(pieceGeometry, pieceMaterial) as SplitPiece;
-                
+
                 // Start at exact same position as main blob (overlapping perfectly)
                 piece.position.copy(mainBlob.position);
                 piece.rotation.copy(mainBlob.rotation);
                 // Use uniform scale to maintain perfect circle shape
                 piece.scale.set(1, 1, 1);
-                
+
                 // Store material reference for color animation
                 piece.materialRef = pieceMaterial;
                 piece.startColor = startColor.clone();
                 piece.targetColor = targetColor.clone();
-                
+
                 // Initially they're all at the same position, so they look like one blob
                 scene.add(piece);
                 splitPiecesRef.current.push(piece);
@@ -693,7 +707,7 @@ export default function BlobCanvas() {
 
             // Store initial main blob position (initialMainScale already defined above)
             const initialMainPosition = mainBlob.position.clone();
-            
+
             isSplittingRef.current = true;
             isTransitioningRef.current = true;
 
@@ -703,24 +717,24 @@ export default function BlobCanvas() {
             const animateSplit = (time: number) => {
                 const progress = Math.min((time - startTime) / duration, 1);
                 // Smooth easing
-                const eased = progress < 0.5 
-                    ? 2 * progress * progress 
+                const eased = progress < 0.5
+                    ? 2 * progress * progress
                     : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
                 splitPiecesRef.current.forEach((piece, i) => {
                     const startPos = initialMainPosition.clone();
                     const targetPos = targetPositions[i];
-                    
+
                     // Animate position: move from center to target position
                     piece.position.lerpVectors(startPos, targetPos, eased);
-                    
+
                     // Animate color: transition from purple to black
                     if (piece.materialRef && piece.startColor && piece.targetColor) {
                         // Interpolate color smoothly
                         piece.materialRef.color.lerpColors(piece.startColor, piece.targetColor, eased);
                         piece.materialRef.emissive.lerpColors(piece.startColor, piece.targetColor, eased);
                     }
-                    
+
                     // Pieces maintain uniform scale to keep perfect circle shape
                     // Keep the scale constant during animation (already set to 1,1,1)
                     piece.scale.set(1, 1, 1);
@@ -729,7 +743,7 @@ export default function BlobCanvas() {
                 // Animate main blob: shrink slightly (not to 0) and fade out
                 const mainBlobScale = THREE.MathUtils.lerp(initialMainScale, initialMainScale * 0.3, eased);
                 mainBlob.scale.setScalar(mainBlobScale);
-                
+
                 // Fade out main blob as pieces separate
                 if (material.uniforms && material.uniforms.uGlowIntensity) {
                     material.uniforms.uGlowIntensity.value = THREE.MathUtils.lerp(1.0, 0, eased);
@@ -750,7 +764,7 @@ export default function BlobCanvas() {
                     // Hide main blob after animation (keep it at shrunk size, not 0)
                     mainBlob.visible = false;
                     mainBlob.scale.setScalar(initialMainScale * 0.3);
-                    
+
                     // KEEP split pieces - they will stay visible in thinking mode
                     // DO NOT remove them - they need to be animated by the thinking animation loop
                     // Verify pieces are still in the scene
@@ -773,7 +787,7 @@ export default function BlobCanvas() {
                     isSplittingRef.current = false;
                     isTransitioningRef.current = false;
                     transitionFrameRef.current = null;
-                    
+
                     // Final render with error handling
                     try {
                         renderer.render(scene, camera);
@@ -797,7 +811,7 @@ export default function BlobCanvas() {
             const renderer = rendererRef.current;
             const scene = sceneRef.current;
             const camera = cameraRef.current;
-            
+
             if (!material || !mainBlob || !renderer || !scene || !camera) {
                 prevStateRef.current = currentState;
                 return;
@@ -840,22 +854,22 @@ export default function BlobCanvas() {
             const animateMerge = (time: number) => {
                 const progress = Math.min((time - startTime) / duration, 1);
                 // Smooth easing
-                const eased = progress < 0.5 
-                    ? 2 * progress * progress 
+                const eased = progress < 0.5
+                    ? 2 * progress * progress
                     : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
                 // Animate pieces: move to center and fade out
                 pieces.forEach((piece, i) => {
                     const startPos = initialPositions[i];
                     const startScale = initialScales[i];
-                    
+
                     // Move piece toward center
                     piece.position.lerpVectors(startPos, centerPosition, eased);
-                    
+
                     // Shrink piece as it moves to center
                     const targetScale = 0;
                     piece.scale.setScalar(THREE.MathUtils.lerp(startScale, targetScale, eased));
-                    
+
                     // Fade out piece
                     if (piece.material instanceof THREE.MeshStandardMaterial) {
                         piece.material.opacity = THREE.MathUtils.lerp(1.0, 0.0, eased);
@@ -866,7 +880,7 @@ export default function BlobCanvas() {
                 // Animate main blob: grow from center and fade in
                 const mainBlobScale = THREE.MathUtils.lerp(0.1, targetMainScale, eased);
                 mainBlob.scale.setScalar(mainBlobScale);
-                
+
                 // Fade in main blob
                 if (material.uniforms && material.uniforms.uGlowIntensity) {
                     material.uniforms.uGlowIntensity.value = eased;
@@ -900,7 +914,7 @@ export default function BlobCanvas() {
 
                     isTransitioningRef.current = false;
                     transitionFrameRef.current = null;
-                    
+
                     // Final render with error handling
                     try {
                         renderer.render(scene, camera);

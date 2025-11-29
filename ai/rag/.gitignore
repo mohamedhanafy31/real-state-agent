@@ -43,10 +43,9 @@ ENV/
 *.ipynb_checkpoints/
 
 # Data files
-# INCLUDE embeddings in Git for Docker builds (small files, needed in production)
-# data/embeddings/*.faiss
-# data/embeddings/*.pkl
-# data/embeddings/*.json
+data/embeddings/*.faiss
+data/embeddings/*.pkl
+data/embeddings/*.json
 data/processed/*
 
 # Logs

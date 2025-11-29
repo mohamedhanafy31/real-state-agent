@@ -34,7 +34,13 @@ const resolveImageUrl = (rawUrl?: string) => {
         return trimmed;
     }
 
-    return `/api/image-proxy?url=${encodeURIComponent(trimmed)}`;
+    // Handle relative paths from RAG API (e.g., "generated_images/filename.png")
+    // Convert to full RAG API URL
+    const orchestratorUrl = process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || 'https://orchestrator-dbgj63mjca-uc.a.run.app';
+    const ragApiUrl = orchestratorUrl.replace('orchestrator', 'rag-api');
+    const fullImageUrl = `${ragApiUrl}/images/${trimmed.replace(/^generated_images\//, '')}`;
+
+    return `/api/image-proxy?url=${encodeURIComponent(fullImageUrl)}`;
 };
 
 export default function ImagePanel() {
