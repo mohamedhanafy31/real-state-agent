@@ -64,8 +64,18 @@ export default function Home() {
         const wasQueued = audioPlaybackRef.current.queueSegment(base64Audio);
         if (wasQueued) {
           // Only update state if chunk was actually queued (not discarded)
+          console.log('[OrchestratorAPI] 🔵 Setting blob state to speaking and isPlaying to true');
           setBlobState('speaking');
           setIsPlaying(true);
+          // Verify state was set (check after a microtask)
+          setTimeout(() => {
+            const verifyState = useAppStore.getState();
+            console.log('[OrchestratorAPI] 🔍 State verification:', {
+              blobState: verifyState.blob.state,
+              isPlaying: verifyState.audio.isPlaying,
+              expectedState: 'speaking'
+            });
+          }, 0);
           console.log('[OrchestratorAPI] ✅ TTS audio queued for playback');
         } else {
           console.log('[OrchestratorAPI] 🗑️ TTS audio chunk discarded (interrupted stream)');

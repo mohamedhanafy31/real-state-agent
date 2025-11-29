@@ -21,6 +21,18 @@ export default function MicrophoneButton({ onPress, onRelease }: MicrophoneButto
     // 2. State is silent and no audio is playing (to allow starting)
     // 3. State is speaking (to allow interrupting AI speech)
     const canInteract = audio.isRecording || (blob.state === 'silent' && !isAudioPlaying) || blob.state === 'speaking';
+    
+    // Debug logging for button state
+    if (isSpeaking || isAudioPlaying) {
+      console.log('[MicrophoneButton] 🎤 Button state:', {
+        isSpeaking,
+        isAudioPlaying,
+        blobState: blob.state,
+        canInteract,
+        micButtonEnabled: ui.micButtonEnabled,
+        isRecording: audio.isRecording
+      });
+    }
 
     const handlePointerDown = () => {
         // Allow interrupt during speaking state
