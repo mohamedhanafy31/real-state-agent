@@ -27,6 +27,7 @@ export default function BlobCanvas() {
     const mainClockRef = useRef<THREE.Clock | null>(null);
     const splitPiecesRef = useRef<SplitPiece[]>([]);
     const isSplittingRef = useRef<boolean>(false);
+    const isDisposedRef = useRef<boolean>(false); // Track if resources are disposed
 
     const { blob, content } = useAppStore();
     const blobStateRef = useRef<BlobState>(blob.state);
@@ -48,6 +49,9 @@ export default function BlobCanvas() {
     }, [content.gallery.length]);
 
     useEffect(() => {
+        // Reset disposed flag when component (re)mounts
+        isDisposedRef.current = false;
+
         if (!canvasRef.current) return;
 
         const canvas = canvasRef.current;
@@ -122,6 +126,11 @@ export default function BlobCanvas() {
         mainClockRef.current = clock; // Store clock reference for transitions
 
         const animate = () => {
+            // Guard: Exit immediately if disposed
+            if (isDisposedRef.current) {
+                return;
+            }
+
             // Guard: Exit if resources have been disposed (component unmounted)
             if (!material || !mesh || !renderer || !camera || !scene) {
                 return;
@@ -282,6 +291,9 @@ export default function BlobCanvas() {
 
         // Cleanup
         return () => {
+            // Set disposed flag first to stop all animations immediately
+            isDisposedRef.current = true;
+
             window.removeEventListener('resize', handleResize);
             if (animationIdRef.current) {
                 cancelAnimationFrame(animationIdRef.current);
