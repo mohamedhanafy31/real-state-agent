@@ -161,7 +161,12 @@ export default function BlobCanvas() {
                 camera.updateProjectionMatrix();
             }
 
-            if (material.uniforms) {
+            // Defensive WebGL operations - wrap in try-catch to handle mid-frame resource changes
+            try {
+                if (!material || !material.uniforms || isDisposedRef.current) {
+                    return;
+                }
+
                 material.uniforms.uTime.value = elapsedTime;
                 material.uniforms.uRippleTime.value = elapsedTime;
 
@@ -260,12 +265,33 @@ export default function BlobCanvas() {
                         0.1
                     );
                 }
+            } catch (error) {
+                // Silently catch WebGL errors when resources are disposed mid-frame
+                if (isDisposedRef.current) {
+                    return;
+                }
+                // Log unexpected errors for debugging
+                console.warn('WebGL uniform update error:', error);
+                return;
             }
 
 
             // Don't render during transitions - transition animation handles rendering
             if (!isTransitioningRef.current && !isSplittingRef.current) {
-                renderer.render(scene, camera);
+                try {
+                    // Defensive render - catch errors when renderer/scene/camera become invalid
+                    if (!renderer || !scene || !camera || isDisposedRef.current) {
+                        return;
+                    }
+                    renderer.render(scene, camera);
+                } catch (error) {
+                    // Silently catch WebGL render errors
+                    if (isDisposedRef.current) {
+                        return;
+                    }
+                    console.warn('WebGL render error:', error);
+                    return;
+                }
             }
             animationIdRef.current = requestAnimationFrame(animate);
         };
