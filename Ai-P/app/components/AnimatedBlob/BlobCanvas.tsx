@@ -28,6 +28,7 @@ export default function BlobCanvas() {
     const splitPiecesRef = useRef<SplitPiece[]>([]);
     const isSplittingRef = useRef<boolean>(false);
     const isDisposedRef = useRef<boolean>(false); // Track if resources are disposed
+    const webglErrorCountRef = useRef<number>(0); // Track consecutive WebGL errors for recovery
 
     const { blob, content } = useAppStore();
     const blobStateRef = useRef<BlobState>(blob.state);
@@ -266,14 +267,21 @@ export default function BlobCanvas() {
                     );
                 }
             } catch (error) {
-                // Silently catch WebGL errors when resources are disposed mid-frame
+                // Track consecutive errors for recovery
+                webglErrorCountRef.current++;
+
                 if (isDisposedRef.current) {
                     return;
                 }
-                // Log unexpected errors for debugging
-                console.warn('WebGL uniform update error:', error);
+
+                // Log warning if multiple consecutive errors (possible resource corruption)
+                if (webglErrorCountRef.current >= 3) {
+                    console.warn(`WebGL uniform errors detected (${webglErrorCountRef.current} consecutive). Resources may need recreation.`, error);
+                }
                 return;
             }
+            // Reset error counter on successful uniform updates
+            webglErrorCountRef.current = 0;
 
 
             // Don't render during transitions - transition animation handles rendering
@@ -284,12 +292,20 @@ export default function BlobCanvas() {
                         return;
                     }
                     renderer.render(scene, camera);
+                    // Reset error counter on successful render
+                    webglErrorCountRef.current = 0;
                 } catch (error) {
-                    // Silently catch WebGL render errors
+                    // Track consecutive errors
+                    webglErrorCountRef.current++;
+
                     if (isDisposedRef.current) {
                         return;
                     }
-                    console.warn('WebGL render error:', error);
+
+                    // Log warning if multiple consecutive errors
+                    if (webglErrorCountRef.current >= 3) {
+                        console.warn(`WebGL render errors detected (${webglErrorCountRef.current} consecutive). Animation may be degraded.`, error);
+                    }
                     return;
                 }
             }
