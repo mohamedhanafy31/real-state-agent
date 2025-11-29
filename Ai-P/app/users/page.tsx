@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Mail, Phone, Calendar, Download, RefreshCw } from 'lucide-react';
+import { Users, Mail, Phone, Calendar, Download, RefreshCw, Home } from 'lucide-react';
+import Link from 'next/link';
+import styles from './page.module.css';
 
 interface UserInfo {
     name: string;
@@ -37,19 +39,27 @@ export default function UsersPage() {
     const exportToCSV = () => {
         if (users.length === 0) return;
 
-        const headers = ['Name,Phone,Email,Timestamp'];
-        const rows = users.map(u =>
-            `"${u.name}","${u.phone}","${u.email}","${u.timestamp}"`
-        );
-        const csv = [headers, ...rows].join('\n');
+        try {
+            // Proper CSV formatting with separate header columns
+            const headers = ['Name', 'Phone', 'Email', 'Timestamp'];
+            const rows = users.map(u =>
+                `"${u.name.replace(/"/g, '""')}","${u.phone.replace(/"/g, '""')}","${u.email.replace(/"/g, '""')}","${u.timestamp.replace(/"/g, '""')}"`
+            );
+            const csv = [headers.join(','), ...rows].join('\n');
 
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `users_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `users_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Error exporting CSV:', err);
+            setError('Failed to export CSV. Please try again.');
+        }
     };
 
     const formatDate = (timestamp: string) => {
@@ -64,40 +74,47 @@ export default function UsersPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 p-6">
-            <div className="max-w-7xl mx-auto">
+        <div className={styles.page}>
+            <div className={styles.container}>
                 {/* Header */}
-                <div className="bg-gradient-to-r from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-gray-700/50 shadow-2xl">
-                    <div className="flex items-center justify-between flex-wrap gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-blue-600/20 rounded-xl">
-                                <Users className="w-8 h-8 text-blue-400" />
+                <div className={styles.header}>
+                    <div className={styles.headerContent}>
+                        <div className={styles.headerLeft}>
+                            <div className={styles.iconContainer}>
+                                <Users className={styles.icon} />
                             </div>
-                            <div>
-                                <h1 className="text-3xl font-bold text-white">
+                            <div className={styles.headerText}>
+                                <h1 className={styles.title}>
                                     Users Dashboard
                                 </h1>
-                                <p className="text-gray-400 mt-1">
+                                <p className={styles.subtitle}>
                                     Total: {users.length} {users.length === 1 ? 'user' : 'users'}
                                 </p>
                             </div>
                         </div>
 
-                        <div className="flex gap-3">
+                        <div className={styles.headerActions}>
+                            <Link
+                                href="/"
+                                className={styles.button}
+                            >
+                                <Home className={styles.buttonIcon} />
+                                Home
+                            </Link>
                             <button
                                 onClick={fetchUsers}
                                 disabled={loading}
-                                className="flex items-center gap-2 px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 text-white rounded-lg transition disabled:opacity-50"
+                                className={styles.button}
                             >
-                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                <RefreshCw className={`${styles.buttonIcon} ${loading ? styles.spinning : ''}`} />
                                 Refresh
                             </button>
                             <button
                                 onClick={exportToCSV}
                                 disabled={users.length === 0}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition disabled:opacity-50"
+                                className={`${styles.button} ${styles.buttonPrimary}`}
                             >
-                                <Download className="w-4 h-4" />
+                                <Download className={styles.buttonIcon} />
                                 Export CSV
                             </button>
                         </div>
@@ -106,25 +123,25 @@ export default function UsersPage() {
 
                 {/* Loading State */}
                 {loading && (
-                    <div className="text-center py-12">
-                        <div className="inline-block w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-                        <p className="text-gray-400 mt-4">Loading users...</p>
+                    <div className={styles.loadingContainer}>
+                        <div className={styles.spinner}></div>
+                        <p className={styles.loadingText}>Loading users...</p>
                     </div>
                 )}
 
                 {/* Error State */}
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-6 text-center">
-                        <p className="text-red-400">{error}</p>
+                    <div className={styles.errorContainer}>
+                        <p className={styles.errorText}>{error}</p>
                     </div>
                 )}
 
                 {/* Empty State */}
                 {!loading && !error && users.length === 0 && (
-                    <div className="bg-gray-800/30 border border-gray-700/50 rounded-xl p-12 text-center">
-                        <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                        <p className="text-gray-400 text-lg">No users yet</p>
-                        <p className="text-gray-500 text-sm mt-2">
+                    <div className={styles.emptyContainer}>
+                        <Users className={styles.emptyIcon} />
+                        <p className={styles.emptyTitle}>No users yet</p>
+                        <p className={styles.emptySubtitle}>
                             Users who submit their information will appear here
                         </p>
                     </div>
@@ -132,47 +149,47 @@ export default function UsersPage() {
 
                 {/* Users Grid */}
                 {!loading && !error && users.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className={styles.usersGrid}>
                         {users.map((user, index) => (
                             <div
                                 key={user.email + index}
-                                className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50 hover:border-blue-500/50 transition shadow-lg hover:shadow-blue-500/10"
+                                className={styles.userCard}
                             >
                                 {/* User Number Badge */}
-                                <div className="flex justify-between items-start mb-4">
-                                    <span className="px-3 py-1 bg-blue-600/20 text-blue-400 text-sm font-semibold rounded-full">
+                                <div className={styles.userBadge}>
+                                    <span className={styles.badge}>
                                         #{users.length - index}
                                     </span>
                                 </div>
 
                                 {/* Name */}
-                                <h3 className="text-xl font-bold text-white mb-4">
+                                <h3 className={styles.userName}>
                                     {user.name}
                                 </h3>
 
                                 {/* Contact Info */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3 text-gray-300">
-                                        <div className="p-2 bg-gray-700/50 rounded-lg">
-                                            <Mail className="w-4 h-4 text-blue-400" />
+                                <div className={styles.contactInfo}>
+                                    <div className={styles.contactItem}>
+                                        <div className={`${styles.contactIcon} ${styles.contactIconMail}`}>
+                                            <Mail className={styles.buttonIcon} />
                                         </div>
-                                        <span className="text-sm truncate" title={user.email}>
+                                        <span className={`${styles.contactText} ${styles.contactTextTruncate}`} title={user.email}>
                                             {user.email}
                                         </span>
                                     </div>
 
-                                    <div className="flex items-center gap-3 text-gray-300">
-                                        <div className="p-2 bg-gray-700/50 rounded-lg">
-                                            <Phone className="w-4 h-4 text-green-400" />
+                                    <div className={styles.contactItem}>
+                                        <div className={`${styles.contactIcon} ${styles.contactIconPhone}`}>
+                                            <Phone className={styles.buttonIcon} />
                                         </div>
-                                        <span className="text-sm">{user.phone}</span>
+                                        <span className={styles.contactText}>{user.phone}</span>
                                     </div>
 
-                                    <div className="flex items-center gap-3 text-gray-400 pt-2 border-t border-gray-700/50">
-                                        <div className="p-2 bg-gray-700/50 rounded-lg">
-                                            <Calendar className="w-4 h-4 text-purple-400" />
+                                    <div className={`${styles.contactItem} ${styles.divider}`}>
+                                        <div className={`${styles.contactIcon} ${styles.contactIconCalendar}`}>
+                                            <Calendar className={styles.buttonIcon} />
                                         </div>
-                                        <span className="text-xs">{formatDate(user.timestamp)}</span>
+                                        <span className={styles.contactTextSmall}>{formatDate(user.timestamp)}</span>
                                     </div>
                                 </div>
                             </div>

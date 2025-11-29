@@ -1,5 +1,3 @@
-import { calculateAudioLevel } from '../utils/audioUtils';
-
 export class AudioCapture {
     private audioContext: AudioContext | null = null;
     private mediaStream: MediaStream | null = null;
@@ -58,6 +56,14 @@ export class AudioCapture {
 
             return true;
         } catch (error) {
+            console.error('[AudioCapture] Failed to initialize:', error);
+            if (error instanceof Error) {
+                console.error('[AudioCapture] Error details:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack,
+                });
+            }
             return false;
         }
     }

@@ -1,0 +1,291 @@
+.page {
+    min-height: 100vh;
+    background: linear-gradient(to bottom right, rgb(3, 7, 18), rgb(17, 24, 39), rgb(3, 7, 18));
+    padding: 1.5rem;
+}
+
+.container {
+    max-width: 80rem;
+    margin: 0 auto;
+}
+
+.header {
+    background: linear-gradient(to right, rgba(31, 41, 55, 0.5), rgba(17, 24, 39, 0.5));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(55, 65, 81, 0.5);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.headerContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.iconContainer {
+    padding: 0.75rem;
+    background: rgba(37, 99, 235, 0.2);
+    border-radius: 0.75rem;
+}
+
+.icon {
+    width: 2rem;
+    height: 2rem;
+    color: rgb(96, 165, 250);
+}
+
+.headerText {
+    display: flex;
+    flex-direction: column;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: white;
+    margin: 0;
+}
+
+.subtitle {
+    color: rgb(156, 163, 175);
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+}
+
+.headerActions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(55, 65, 81, 0.5);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.button:hover:not(:disabled) {
+    background: rgba(75, 85, 99, 0.5);
+}
+
+.button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.buttonPrimary {
+    background: rgb(37, 99, 235);
+}
+
+.buttonPrimary:hover:not(:disabled) {
+    background: rgb(59, 130, 246);
+}
+
+.buttonIcon {
+    width: 1rem;
+    height: 1rem;
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loadingContainer {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.spinner {
+    display: inline-block;
+    width: 3rem;
+    height: 3rem;
+    border: 4px solid rgba(59, 130, 246, 0.3);
+    border-top-color: rgb(59, 130, 246);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loadingText {
+    color: rgb(156, 163, 175);
+    margin-top: 1rem;
+}
+
+.errorContainer {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.errorText {
+    color: rgb(248, 113, 113);
+    margin: 0;
+}
+
+.emptyContainer {
+    background: rgba(31, 41, 55, 0.3);
+    border: 1px solid rgba(55, 65, 81, 0.5);
+    border-radius: 0.75rem;
+    padding: 3rem;
+    text-align: center;
+}
+
+.emptyIcon {
+    width: 4rem;
+    height: 4rem;
+    color: rgb(75, 85, 99);
+    margin: 0 auto 1rem;
+}
+
+.emptyTitle {
+    color: rgb(156, 163, 175);
+    font-size: 1.125rem;
+    margin: 0;
+}
+
+.emptySubtitle {
+    color: rgb(107, 114, 128);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+}
+
+.usersGrid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .usersGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .usersGrid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.userCard {
+    background: linear-gradient(to bottom right, rgba(31, 41, 55, 0.5), rgba(17, 24, 39, 0.5));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    border: 1px solid rgba(55, 65, 81, 0.5);
+    transition: all 0.2s;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.userCard:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+}
+
+.userBadge {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.badge {
+    padding: 0.25rem 0.75rem;
+    background: rgba(37, 99, 235, 0.2);
+    color: rgb(96, 165, 250);
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 9999px;
+}
+
+.userName {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1rem;
+    margin-top: 0;
+}
+
+.contactInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.contactItem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: rgb(209, 213, 219);
+}
+
+.contactIcon {
+    padding: 0.5rem;
+    background: rgba(55, 65, 81, 0.5);
+    border-radius: 0.5rem;
+}
+
+.contactIconMail {
+    color: rgb(96, 165, 250);
+}
+
+.contactIconPhone {
+    color: rgb(74, 222, 128);
+}
+
+.contactIconCalendar {
+    color: rgb(192, 132, 252);
+}
+
+.contactText {
+    font-size: 0.875rem;
+}
+
+.contactTextTruncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.contactTextSmall {
+    font-size: 0.75rem;
+    color: rgb(156, 163, 175);
+}
+
+.divider {
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(55, 65, 81, 0.5);
+}
+

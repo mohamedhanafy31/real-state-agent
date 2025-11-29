@@ -37,6 +37,19 @@ async function writeUsers(users: UserInfo[]): Promise<void> {
     await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
 }
 
+// Input validation constants
+const MAX_NAME_LENGTH = 200;
+const MAX_PHONE_LENGTH = 50;
+const MAX_EMAIL_LENGTH = 254; // RFC 5321
+
+// Sanitize string input
+function sanitizeString(input: unknown, maxLength: number): string {
+    if (typeof input !== 'string') {
+        throw new Error('Invalid input type');
+    }
+    return input.trim().slice(0, maxLength);
+}
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -49,9 +62,60 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Validate and sanitize name
+        let name: string;
+        try {
+            name = sanitizeString(body.name, MAX_NAME_LENGTH);
+            if (name.length === 0) {
+                return NextResponse.json(
+                    { error: 'Name cannot be empty' },
+                    { status: 400 }
+                );
+            }
+        } catch {
+            return NextResponse.json(
+                { error: 'Invalid name format' },
+                { status: 400 }
+            );
+        }
+
+        // Validate and sanitize phone
+        let phone: string;
+        try {
+            phone = sanitizeString(body.phone, MAX_PHONE_LENGTH);
+            if (phone.length === 0) {
+                return NextResponse.json(
+                    { error: 'Phone cannot be empty' },
+                    { status: 400 }
+                );
+            }
+        } catch {
+            return NextResponse.json(
+                { error: 'Invalid phone format' },
+                { status: 400 }
+            );
+        }
+
+        // Validate and sanitize email
+        let email: string;
+        try {
+            email = sanitizeString(body.email, MAX_EMAIL_LENGTH).toLowerCase();
+            if (email.length === 0) {
+                return NextResponse.json(
+                    { error: 'Email cannot be empty' },
+                    { status: 400 }
+                );
+            }
+        } catch {
+            return NextResponse.json(
+                { error: 'Invalid email format' },
+                { status: 400 }
+            );
+        }
+
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(body.email)) {
+        if (!emailRegex.test(email)) {
             return NextResponse.json(
                 { error: 'Invalid email format' },
                 { status: 400 }
@@ -59,9 +123,9 @@ export async function POST(request: NextRequest) {
         }
 
         const newUser: UserInfo = {
-            name: body.name.trim(),
-            phone: body.phone.trim(),
-            email: body.email.trim().toLowerCase(),
+            name,
+            phone,
+            email,
             timestamp: body.timestamp || new Date().toISOString(),
         };
 

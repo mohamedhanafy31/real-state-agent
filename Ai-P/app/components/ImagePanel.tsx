@@ -36,7 +36,11 @@ const resolveImageUrl = (rawUrl?: string) => {
 
     // Handle relative paths from RAG API (e.g., "generated_images/filename.png")
     // Convert to full RAG API URL
-    const orchestratorUrl = process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || 'https://orchestrator-dbgj63mjca-uc.a.run.app';
+    const orchestratorUrl = process.env.NEXT_PUBLIC_ORCHESTRATOR_URL;
+    if (!orchestratorUrl) {
+        console.warn('[ImagePanel] NEXT_PUBLIC_ORCHESTRATOR_URL not set, cannot resolve RAG API image URL');
+        return FALLBACK_IMAGE;
+    }
     const ragApiUrl = orchestratorUrl.replace('orchestrator', 'rag-api');
     const fullImageUrl = `${ragApiUrl}/images/${trimmed.replace(/^generated_images\//, '')}`;
 

@@ -24,6 +24,14 @@ export class AudioPlayback {
             this.analyzer = new AudioAnalyzer(this.audioContext);
             return true;
         } catch (error) {
+            console.error('[AudioPlayback] Failed to initialize:', error);
+            if (error instanceof Error) {
+                console.error('[AudioPlayback] Error details:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack,
+                });
+            }
             return false;
         }
     }

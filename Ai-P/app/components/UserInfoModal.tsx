@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import styles from './UserInfoModal.module.css';
 
 interface UserInfoModalProps {
     isOpen: boolean;
@@ -89,31 +90,39 @@ export default function UserInfoModal({ isOpen, onClose, onSubmit }: UserInfoMod
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="relative w-full max-w-md mx-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-gray-700/50">
+        <div className={styles.modalOverlay} onClick={onClose}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
-                <div className="relative px-6 py-5 border-b border-gray-700/50">
-                    <h2 className="text-2xl font-bold text-white text-center">
+                <div className={styles.modalHeader}>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className={styles.closeButton}
+                        aria-label="Close modal"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                    <h2 className={styles.modalTitle}>
                         مرحباً بك! 👋
                     </h2>
-                    <p className="text-gray-400 text-center mt-2 text-sm">
+                    <p className={styles.modalSubtitle}>
                         نود التعرف عليك بشكل أفضل لتقديم أفضل خدمة
                     </p>
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form onSubmit={handleSubmit} className={styles.modalForm}>
                     {/* Name Field */}
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                            الاسم الكامل <span className="text-red-400">*</span>
+                    <div className={styles.formField}>
+                        <label htmlFor="name" className={styles.formLabel}>
+                            الاسم الكامل <span className={styles.required}>*</span>
                         </label>
                         <input
                             type="text"
                             id="name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            className={styles.formInput}
                             placeholder="أدخل اسمك الكامل"
                             disabled={isSubmitting}
                             autoFocus
@@ -121,32 +130,32 @@ export default function UserInfoModal({ isOpen, onClose, onSubmit }: UserInfoMod
                     </div>
 
                     {/* Phone Field */}
-                    <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-gray-300 mb-2">
-                            رقم الهاتف <span className="text-red-400">*</span>
+                    <div className={styles.formField}>
+                        <label htmlFor="phone" className={styles.formLabel}>
+                            رقم الهاتف <span className={styles.required}>*</span>
                         </label>
                         <input
                             type="tel"
                             id="phone"
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
-                            className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            className={styles.formInput}
                             placeholder="+20 1XX XXX XXXX"
                             disabled={isSubmitting}
                         />
                     </div>
 
                     {/* Email Field */}
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                            البريد الإلكتروني <span className="text-red-400">*</span>
+                    <div className={styles.formField}>
+                        <label htmlFor="email" className={styles.formLabel}>
+                            البريد الإلكتروني <span className={styles.required}>*</span>
                         </label>
                         <input
                             type="email"
                             id="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            className={styles.formInput}
                             placeholder="example@email.com"
                             disabled={isSubmitting}
                         />
@@ -154,8 +163,8 @@ export default function UserInfoModal({ isOpen, onClose, onSubmit }: UserInfoMod
 
                     {/* Error Message */}
                     {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
-                            <p className="text-red-400 text-sm text-center">{error}</p>
+                        <div className={styles.errorMessage}>
+                            <p className={styles.errorText}>{error}</p>
                         </div>
                     )}
 
@@ -163,13 +172,13 @@ export default function UserInfoModal({ isOpen, onClose, onSubmit }: UserInfoMod
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30"
+                        className={styles.submitButton}
                     >
                         {isSubmitting ? 'جاري الحفظ...' : 'متابعة'}
                     </button>
 
                     {/* Privacy Note */}
-                    <p className="text-xs text-gray-500 text-center">
+                    <p className={styles.privacyNote}>
                         🔒 بياناتك آمنة ولن يتم مشاركتها مع أي طرف ثالث
                     </p>
                 </form>
