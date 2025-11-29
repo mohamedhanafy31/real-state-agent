@@ -341,6 +341,127 @@
         "description": "Company mission query - NOT related to CSV units.",
         "expected_filter": "N/A - Query about company mission, not units",
         "returned_rows": []
+      },
+
+      {
+        "query": "عايز شقة يكون سعرها أقل من ٦ مليون",
+        "description": "Apartments with price <= 6M EGP.",
+        "expected_filter": "Usage == 'Apartment' AND Price <= 6_000_000",
+        "returned_rows": [5, 11, 12, 17, 18, 20, 22, 26]
+      },
+      {
+        "query": "عايز شقة يكون سعرها بين ٥ و ٦ مليون",
+        "description": "Apartments with price between 5M and 6M.",
+        "expected_filter": "Usage == 'Apartment' AND Price >= 5_000_000 AND Price <= 6_000_000",
+        "returned_rows": [5, 12, 18, 22, 26]
+      },
+      {
+        "query": "عايز وحدة مساحتها من ١٥٠ لحد ١٧٠ متر",
+        "description": "Units with area between 150 and 170 sqm.",
+        "expected_filter": "Area >= 150 AND Area <= 170",
+        "returned_rows": [3, 4, 5, 7, 9, 12, 15, 22, 26]
+      },
+      {
+        "query": "عايز دور أرضي بجاردن كبير",
+        "description": "Ground floor units with large private garden.",
+        "expected_filter": "Floor == 'Gr' AND Garden >= 80",
+        "returned_rows": [6, 8, 10, 23, 25]
+      },
+      {
+        "query": "عايز فيلا أو جاردن فيلا أو سكاي فيلا يكون سعرها أقل من ٢٠ مليون",
+        "description": "Any villa-like unit (Villa, Garden Villa, Sky Villa) with price < 20M.",
+        "expected_filter": "Usage CONTAINS 'Villa' AND Price < 20_000_000",
+        "returned_rows": [6, 10, 16, 19, 23, 25]
+      },
+      {
+        "query": "عايز فيلا مستقلة فقط مش جاردن ولا سكاي",
+        "description": "Standalone Villa units only (exclude Garden/Sky).",
+        "expected_filter": "Usage == 'Villa'",
+        "returned_rows": [2, 13, 24]
+      },
+      {
+        "query": "عايز سكاي فيلا برووف كبير",
+        "description": "Sky Villa units with roof area > 100 sqm.",
+        "expected_filter": "Usage == 'Sky Villa' AND Roof > 100",
+        "returned_rows": [16]
+      },
+      {
+        "query": "عايز شقة فيها كل الخدمات من gym و kids area و clubhouse و حمام سباحة",
+        "description": "Apartments that mention clubhouse, kids area, gym, and swimming pool.",
+        "expected_filter": "Usage == 'Apartment' AND Description CONTAINS 'clubhouse' AND Description CONTAINS 'kids area' AND Description CONTAINS 'gym' AND Description CONTAINS 'حمام سباحة'",
+        "returned_rows": [3, 4, 5, 7, 8, 9, 11, 12, 14, 15, 17, 18, 20, 21, 22, 26]
+      },
+      {
+        "query": "عايز شقة بتطل على البحر وسعرها أقل من أو يساوي ٧ مليون",
+        "description": "Sea view apartments with price <= 7M.",
+        "expected_filter": "Usage == 'Apartment' AND Price <= 7_000_000 AND (Description CONTAINS 'مطل على البحر' OR Description CONTAINS 'sea view' OR Description CONTAINS 'beach view')",
+        "returned_rows": [3, 12]
+      },
+      {
+        "query": "عايز وحدة بتطل على النادي وسعرها أقل من ٦ مليون",
+        "description": "Units overlooking the sports club with price < 6M.",
+        "expected_filter": "Price < 6_000_000 AND (Description CONTAINS 'مطل على النادي' OR Description CONTAINS 'sports club')",
+        "returned_rows": [11, 20, 22]
+      },
+      {
+        "query": "عايز شقة جاردن فيو ومعاها جاردن خاص",
+        "description": "Garden view apartments that have a private garden area.",
+        "expected_filter": "Usage == 'Apartment' AND Garden > 0 AND (Description CONTAINS 'مطل على الجاردن' OR Description CONTAINS 'garden view')",
+        "returned_rows": [8, 15, 17]
+      },
+      {
+        "query": "عايز وحدة بتطل على مساحة خضراء وكمان فيها open view",
+        "description": "Units with both green area view and open view.",
+        "expected_filter": "Description CONTAINS 'مطل على مساحة خضراء' AND Description CONTAINS 'open view'",
+        "returned_rows": [19]
+      },
+      {
+        "query": "عايز وحدة استلام فوري وسعرها من ٥ لـ ٨ مليون",
+        "description": "Ready to move units with price between 5M and 8M.",
+        "expected_filter": "Price >= 5_000_000 AND Price <= 8_000_000 AND (Description CONTAINS 'استلام فوري' OR Description CONTAINS 'ready to move' OR Description CONTAINS 'جاهز للسكن')",
+        "returned_rows": [3, 4, 5, 7, 8, 9, 12, 14, 15, 18, 21, 22, 26]
+      },
+      {
+        "query": "عايز شقة في الدور التالت",
+        "description": "Third-floor apartments.",
+        "expected_filter": "Usage == 'Apartment' AND Floor == '3rd'",
+        "returned_rows": [3, 4, 7, 12, 18, 26]
+      },
+      {
+        "query": "عايز شقة في الدور التاني بس مش بتطل على البحر",
+        "description": "Second-floor apartments without sea view.",
+        "expected_filter": "Usage == 'Apartment' AND Floor == '2nd' AND NOT (Description CONTAINS 'مطل على البحر' OR Description CONTAINS 'sea view' OR Description CONTAINS 'beach view')",
+        "returned_rows": [11, 14, 20, 22]
+      },
+      {
+        "query": "عايز وحدة يكون فيها رووف من ٩٠ لحد ١٢٠ متر",
+        "description": "Units with rooftop area between 90 and 120 sqm.",
+        "expected_filter": "Roof >= 90 AND Roof <= 120",
+        "returned_rows": [2, 13, 16, 19, 24]
+      },
+      {
+        "query": "عايز اشوف الوحدات اللي في مبنى 05/M",
+        "description": "Filter by building code 05/M.",
+        "expected_filter": "Building == '05/M'",
+        "returned_rows": [4, 9, 15, 18]
+      },
+      {
+        "query": "عايز أشوف كل الوحدات اللي في مبنى 02/L",
+        "description": "Filter by building code 02/L.",
+        "expected_filter": "Building == '02/L'",
+        "returned_rows": [5, 12, 17, 22, 26]
+      },
+      {
+        "query": "عايز أحسن وحدة في السعر مقابل المساحة في الجدول ده بس",
+        "description": "Best value unit within this CSV (max Area / Price).",
+        "expected_filter": "sort by (Area / Price) DESC, take top 1",
+        "returned_rows": [18]
+      },
+      {
+        "query": "عايز فيلا او جاردن فيلا مساحتها فوق ٣٠٠ متر وبجاردن",
+        "description": "Villa or Garden Villa units with area >= 300 sqm and a garden.",
+        "expected_filter": "Usage != 'Apartment' AND Area >= 300 AND Garden > 0",
+        "returned_rows": [2, 6, 10, 13, 23, 24, 25]
       }
     ]
   }

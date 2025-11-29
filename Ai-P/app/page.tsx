@@ -9,6 +9,7 @@ import SlideBar from '@/components/SlideBar';
 import BlobCanvas from '@/components/AnimatedBlob';
 import MicrophoneButton from '@/components/MicrophoneButton';
 import ImagePanel from '@/components/ImagePanel';
+import UserInfoModal, { UserInfo } from '@/components/UserInfoModal';
 import type { BlobState } from '@/types';
 import styles from './page.module.css';
 
@@ -48,7 +49,7 @@ export default function Home() {
         hasAudioPlayback: !!audioPlaybackRef.current,
         timestamp: receiveTime
       });
-      
+
       if (audioPlaybackRef.current) {
         audioPlaybackRef.current.queueSegment(base64Audio);
         setBlobState('speaking');
@@ -69,6 +70,18 @@ export default function Home() {
   const [micPermission, setMicPermission] = useState<'unknown' | PermissionState>('unknown');
   const permissionStatusRef = useRef<PermissionStatus | null>(null);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+
+  // Check if user has already submitted info
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hasSubmitted = localStorage.getItem('userInfoSubmitted');
+      if (!hasSubmitted) {
+        // Show modal after a short delay for better UX
+        setTimeout(() => setShowUserModal(true), 1500);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -354,15 +367,15 @@ export default function Home() {
   // Handle mic button release (stop recording)
   const handleMicRelease = async () => {
     const timestamp = getTimestamp();
-    
+
     if (recordingTimeoutRef.current) {
       clearTimeout(recordingTimeoutRef.current);
       recordingTimeoutRef.current = null;
     }
-    
+
     // Get current state from store (not from closure) to avoid stale values
     const currentConnection = useAppStore.getState().connection;
-    
+
     if (!audioCaptureRef.current || !currentConnection.sessionId) {
       console.warn('[OrchestratorAPI] ⚠️ Cannot stop recording:', {
         hasAudioCapture: !!audioCaptureRef.current,
@@ -372,7 +385,7 @@ export default function Home() {
       return;
     }
 
-    const recordingDuration = recordingStartTimeRef.current 
+    const recordingDuration = recordingStartTimeRef.current
       ? (timestamp - recordingStartTimeRef.current) / 1000
       : 0;
 
@@ -399,14 +412,14 @@ export default function Home() {
       // Collect selected units and format as additional message
       const selectedUnitIds = content.selectedUnitIds;
       let additionalMessages: string | undefined = undefined;
-      
+
       if (selectedUnitIds && selectedUnitIds.length > 0) {
         // Get the selected units from the gallery
         const selectedUnits = content.gallery.filter(unit => selectedUnitIds.includes(unit.id));
         // Format unit information (using title or id)
         const unitList = selectedUnits.map(unit => unit.title || unit.id).join(', ');
         additionalMessages = `مهتم بالوحدات :\n${unitList}`;
-        
+
         console.log('[OrchestratorAPI] 📋 Sending selected units as additional message:', {
           selectedUnitIds: selectedUnitIds,
           unitList: unitList,
@@ -428,24 +441,24 @@ export default function Home() {
       });
       // Add a delay before reverting to silent to allow transition to complete
       // This prevents immediate reversion if button is released quickly
-      
+
       // Wait longer if recording was very short (user clicked/released quickly)
       // Audio chunks are generated every 500ms, so we need at least that long
-      const waitTime = recordingDuration > 0 && recordingDuration < 0.6 
+      const waitTime = recordingDuration > 0 && recordingDuration < 0.6
         ? (0.6 - recordingDuration) * 1000 // Wait until at least 600ms total (convert to ms)
         : 500; // Otherwise wait 500ms
-      
+
       // Cancel any existing timeout first
       if (silentTimeoutRef.current) {
         clearTimeout(silentTimeoutRef.current);
       }
-      
+
       silentTimeoutRef.current = setTimeout(() => {
         // Get current state from store (not from closure) to avoid stale values
         const storeState = useAppStore.getState();
         const currentState = storeState.blob.state;
         const currentHasSentChunks = hasSentChunksRef.current;
-        
+
         // Double-check that we're still in listening state and no chunks were sent
         // Use current state from store, not closure value
         if (currentState === 'listening' && !currentHasSentChunks) {
@@ -515,6 +528,16 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      {/* User Info Modal */}
+      <UserInfoModal
+        isOpen={showUserModal}
+        onClose={() => setShowUserModal(false)}
+        onSubmit={(userInfo: UserInfo) => {
+          console.log('User info submitted:', userInfo);
+          setShowUserModal(false);
+        }}
+      />
     </div>
   );
 }

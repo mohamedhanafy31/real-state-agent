@@ -1,0 +1,338 @@
+[
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "السلام عليكم، عايز أعرف عن الوحدات المتاحة",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 1.2294979095458984,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "ايه أسعار الشقق عندكم؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 1.4639229774475098,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "في حاجة أقل من 6 مليون؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.6841492652893066,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "ورني أرخص 3 وحدات",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.7110931873321533,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "الوحدة دي رقم 202 في مبنى 27/I كويسة؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.6828200817108154,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "طب وأقساط المقدم كام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.8752303123474121,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "تمام، عايز أحجز معاد لمعاينة",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.7635927200317383,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "عايز شقة مطلة على البحر",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.5792644023895264,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "في كام وحدة؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.964430570602417,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "ايه أغلى واحدة فيهم؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.686591386795044,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "وأرخص واحدة؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.5482158660888672,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "الفرق بينهم ايه؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.6846354007720947,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "الأرخص دي كود كام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.5214827060699463,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "جميل، ممكن تبعتلي التفاصيل؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.7862820625305176,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "محتاج فيلا كبيرة لعائلة",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.6590392589569092,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "في فيلا بحديقة؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.47212886810302734,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "مساحة الحديقة كام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.8939938545227051,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "والسعر كام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.7893297672271729,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "في أرخص منها؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.5825331211090088,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "طب لو عايز أقسط على 4 سنين القسط هيبقى كام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.8784716129302979,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "ممكن معلومات عن المطور؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.7752411365509033,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 16,
+    "test_name": "Cheapest Unit Query",
+    "query": "ايه أرخص وحدة عندكم؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.6529202461242676,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 17,
+    "test_name": "Most Expensive Unit",
+    "query": "أغلى وحدة بكام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.7922101020812988,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 18,
+    "test_name": "Total Units Available",
+    "query": "عندكم كام وحدة متاحة؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.4968888759613037,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 20,
+    "test_name": "Specific Unit Code Query",
+    "query": "عايز معلومات عن Hawabay/02/D/1",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.660818338394165,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 24,
+    "test_name": "Building Query",
+    "query": "في حاجة في مبنى 05/M؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.6485047340393066,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 25,
+    "test_name": "Third Floor Units",
+    "query": "عايز شقة في الدور التالت",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.5544869899749756,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  },
+  {
+    "test_id": 29,
+    "test_name": "Security Features",
+    "query": "الأمن في الكمباوند ازاي؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.5240905284881592,
+    "issues": [
+      "API Error: 404 Client Error: Not Found for url: https://rag-api-dbgj63mjca-uc.a.run.app/query/stream"
+    ]
+  }
+]

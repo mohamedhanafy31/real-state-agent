@@ -1,0 +1,338 @@
+[
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "السلام عليكم، عايز أعرف عن الوحدات المتاحة",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0011169910430908203,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca09160>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "ايه أسعار الشقق عندكم؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0006041526794433594,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca19a90>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "في حاجة أقل من 6 مليون؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004749298095703125,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca1a710>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "ورني أرخص 3 وحدات",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004897117614746094,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc9da520>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "الوحدة دي رقم 202 في مبنى 27/I كويسة؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004761219024658203,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc9daea0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "طب وأقساط المقدم كام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004734992980957031,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc9bf890>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 1,
+    "test_name": "First-Time Buyer Journey",
+    "query": "تمام، عايز أحجز معاد لمعاينة",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004754066467285156,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca28af0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "عايز شقة مطلة على البحر",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0005648136138916016,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca29480>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "في كام وحدة؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0005311965942382812,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca297b0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "ايه أغلى واحدة فيهم؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0005283355712890625,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca299d0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "وأرخص واحدة؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0008459091186523438,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca29bf0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "الفرق بينهم ايه؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.00046062469482421875,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc98fdf0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "الأرخص دي كود كام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0005612373352050781,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc98fbd0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 2,
+    "test_name": "Sea View Preference",
+    "query": "جميل، ممكن تبعتلي التفاصيل؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0005848407745361328,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc98f9b0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "محتاج فيلا كبيرة لعائلة",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.00046944618225097656,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc98f8a0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "في فيلا بحديقة؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004489421844482422,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc98f460>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "مساحة الحديقة كام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0005247592926025391,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc98f130>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "والسعر كام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004923343658447266,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc98ee00>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "في أرخص منها؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.00045990943908691406,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc98f350>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "طب لو عايز أقسط على 4 سنين القسط هيبقى كام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004506111145019531,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc98ecf0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 3,
+    "test_name": "Villa with Garden",
+    "query": "ممكن معلومات عن المطور؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004923343658447266,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca299d0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 16,
+    "test_name": "Cheapest Unit Query",
+    "query": "ايه أرخص وحدة عندكم؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004954338073730469,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca297b0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 17,
+    "test_name": "Most Expensive Unit",
+    "query": "أغلى وحدة بكام؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.00046944618225097656,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca28e20>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 18,
+    "test_name": "Total Units Available",
+    "query": "عندكم كام وحدة متاحة؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004813671112060547,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca28f30>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 20,
+    "test_name": "Specific Unit Code Query",
+    "query": "عايز معلومات عن Hawabay/02/D/1",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0004646778106689453,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca29480>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 24,
+    "test_name": "Building Query",
+    "query": "في حاجة في مبنى 05/M؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0010783672332763672,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abca29590>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 25,
+    "test_name": "Third Floor Units",
+    "query": "عايز شقة في الدور التالت",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0006587505340576172,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc98f350>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  },
+  {
+    "test_id": 29,
+    "test_name": "Security Features",
+    "query": "الأمن في الكمباوند ازاي؟",
+    "passed": false,
+    "response": "",
+    "units_returned": [],
+    "elapsed_time": 0.0006155967712402344,
+    "issues": [
+      "API Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /query/stream (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7c0abc98ee00>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    ]
+  }
+]

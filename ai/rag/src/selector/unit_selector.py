@@ -269,6 +269,21 @@ class UnitSelector:
             cleaned_code = self._extract_code(raw_response)
             if not cleaned_code:
                 raise ValueError("LLM response did not contain executable code block.")
+            
+            # Pre-execution validation: Check if code has proper price filtering
+            price_constraints = self._extract_price_constraints(clean_question)
+            if price_constraints:
+                # Check if code contains price filtering
+                code_lower = cleaned_code.lower()
+                has_price_filter = any(
+                    keyword in code_lower 
+                    for keyword in ["price", "['price']", "['Price']", "df['price']", "df['Price']"]
+                )
+                if not has_price_filter:
+                    logger.warning(
+                        f"Price constraints detected ({price_constraints}) but code doesn't filter by Price. "
+                        "Will apply post-execution validation."
+                    )
 
             # Extract relevance score from response
             relevance_score = self._extract_relevance_score(raw_response)
@@ -283,7 +298,19 @@ class UnitSelector:
             else:
                 logger.warning("Unit selector LLM_CODE - No relevance score extracted from LLM response")
 
+            # Extract price constraints from query for post-execution validation
+            price_constraints = self._extract_price_constraints(clean_question)
+            
             rows = self._execute_code(cleaned_code, effective_max_rows)
+            
+            # Post-execution validation: enforce price constraints if specified
+            if price_constraints and rows:
+                original_count = len(rows)
+                rows = self._validate_price_constraints(rows, price_constraints)
+                if len(rows) < original_count:
+                    logger.warning(
+                        f"Price validation: Filtered {original_count - len(rows)} units outside price range {price_constraints}"
+                    )
             
             # If relevance score is very low (< 0.3), force empty results
             # This indicates the query is not about CSV units (e.g., company info, developer profile)
@@ -420,14 +447,32 @@ class UnitSelector:
             "- 0.2-0.3: Weak match, query barely relates to CSV data\n"
             "- 0.0-0.1: No match, query cannot be answered from CSV data (e.g., company info, developer profile)\n\n"
             "Code requirements:\n"
-            "1. If query is about units (price, area, type, features, etc.), filter the dataframe 'df'.\n"
+            "1. If query is about units (price, area, type, features, payment plans, etc.), filter the dataframe 'df'.\n"
             "2. If query is NOT about units (company info, developer, etc.), return: selected_units = pd.DataFrame()\n"
-            "3. Clean numeric fields if needed (Price, Area, Garden, Roof).\n"
-            "4. Store result in 'selected_units' variable.\n"
-            "5. Use .head(50) to limit results (if not empty).\n"
-            "6. For text searches, ALWAYS use flexible regex patterns with multiple alternatives (use | for OR).\n"
-            "7. When filtering by Usage type, prefer exact column match: df['Usage'] == 'Apartment'\n"
-            "8. When filtering by Description text, use flexible patterns: df['Description'].str.contains('pattern1|pattern2|pattern3', case=False, na=False)\n"
+            "3. Clean numeric fields if needed (Price, Area, Garden, Roof, and payment columns like '10% مقدم', 'قسط 4 سنين ', '0.15', 'قسط 5 سنين ').\n"
+            "4. When the user asks about payment plans (مثلاً: مقدم 10%، قسط 4 أو 5 سنين، أقل قسط، خطة سداد مريحة)، استخدم أعمدة خطط السداد كما هي موجودة في الجدول:\n"
+            "   - العمود '10% مقدم' يمثل قيمة المقدم عند 10% من سعر الوحدة.\n"
+            "   - العمود '0.15' يمثل قيمة المقدم عند 15% من سعر الوحدة.\n"
+            "   - العمود 'قسط 4 سنين ' يمثل قيمة القسط الدوري (مثلاً سنوي أو نصف سنوي) على 4 سنوات.\n"
+            "   - العمود 'قسط 5 سنين ' يمثل قيمة القسط الدوري على 5 سنوات.\n"
+            "   يمكنك استخدام هذه الأعمدة للمقارنة بين الوحدات (أقل مقدم، أقل قسط، خطة سداد 4 سنين مقابل 5 سنين)، لكن لا تخترع أعمدة أو صيغ جديدة غير موجودة.\n"
+            "5. **CRITICAL - PRICE FILTERING RULES:**\n"
+            "   When user specifies price constraints, you MUST convert 'مليون' (million) to actual numbers and use STRICT operators:\n"
+            "   - 'أقل من X مليون' → df[df['Price'] < X*1000000]  (e.g., 'أقل من 6 مليون' → df[df['Price'] < 6000000])\n"
+            "   - 'أكثر من X مليون' → df[df['Price'] > X*1000000]\n"
+            "   - 'بين X و Y مليون' → df[(df['Price'] >= X*1000000) & (df['Price'] <= Y*1000000)]\n"
+            "   - 'حوالي X مليون' → df[(df['Price'] >= X*0.9*1000000) & (df['Price'] <= X*1.1*1000000)]\n"
+            "   IMPORTANT: The Price column is already in EGP (جنيه مصري), NOT in millions.\n"
+            "   Convert user's 'مليون' to actual numbers: 6 مليون = 6,000,000 EGP.\n"
+            "   Use STRICT inequality operators (< for less than, > for greater than).\n"
+            "   DO NOT return units outside the specified range. This is critical for accuracy.\n"
+            "   When comparing prices, use the raw numeric values from the Price column (no formatting).\n"
+            "   Example: Query 'في حاجة أقل من 6 مليون؟' → Code: selected_units = df[df['Price'] < 6000000].sort_values('Price').head(50)\n"
+            "6. Store result in 'selected_units' variable.\n"
+            "7. Use .head(50) to limit results (if not empty).\n"
+            "8. For text searches, ALWAYS use flexible regex patterns with multiple alternatives (use | for OR).\n"
+            "9. When filtering by Usage type, prefer exact column match: df['Usage'] == 'Apartment'\n"
+            "10. When filtering by Description text, use flexible patterns: df['Description'].str.contains('pattern1|pattern2|pattern3', case=False, na=False)\n"
         )
 
         question_block = question
@@ -533,6 +578,83 @@ class UnitSelector:
                 return 1
         
         return None
+
+    def _extract_price_constraints(self, question: str) -> Optional[Dict[str, Any]]:
+        """Extract price constraints from the question for post-execution validation."""
+        import re
+        
+        question_lower = question.lower()
+        constraints = {}
+        
+        # Pattern: "أقل من X مليون" or "less than X million"
+        pattern_less = re.compile(
+            r'(?:أقل\s+من|less\s+than|under|below)\s*(\d+(?:\.\d+)?)\s*(?:مليون|million|م)',
+            re.IGNORECASE
+        )
+        match = pattern_less.search(question_lower)
+        if match:
+            max_price = float(match.group(1)) * 1000000
+            constraints['max_price'] = max_price
+        
+        # Pattern: "أكثر من X مليون" or "more than X million"
+        pattern_more = re.compile(
+            r'(?:أكثر\s+من|more\s+than|above|over)\s*(\d+(?:\.\d+)?)\s*(?:مليون|million|م)',
+            re.IGNORECASE
+        )
+        match = pattern_more.search(question_lower)
+        if match:
+            min_price = float(match.group(1)) * 1000000
+            constraints['min_price'] = min_price
+        
+        # Pattern: "بين X و Y مليون" or "between X and Y million"
+        pattern_between = re.compile(
+            r'(?:بين|between)\s*(\d+(?:\.\d+)?)\s*(?:و|and)\s*(\d+(?:\.\d+)?)\s*(?:مليون|million|م)',
+            re.IGNORECASE
+        )
+        match = pattern_between.search(question_lower)
+        if match:
+            constraints['min_price'] = float(match.group(1)) * 1000000
+            constraints['max_price'] = float(match.group(2)) * 1000000
+        
+        # Pattern: "حوالي X مليون" or "around X million" (±10%)
+        pattern_around = re.compile(
+            r'(?:حوالي|around|about|approximately)\s*(\d+(?:\.\d+)?)\s*(?:مليون|million|م)',
+            re.IGNORECASE
+        )
+        match = pattern_around.search(question_lower)
+        if match:
+            base_price = float(match.group(1)) * 1000000
+            constraints['min_price'] = base_price * 0.9
+            constraints['max_price'] = base_price * 1.1
+        
+        return constraints if constraints else None
+
+    def _validate_price_constraints(
+        self, rows: List[Dict[str, Any]], constraints: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Filter rows based on price constraints."""
+        if not rows:
+            return rows
+        
+        filtered = []
+        for row in rows:
+            price = row.get('Price', 0)
+            try:
+                price = float(price)
+            except (ValueError, TypeError):
+                continue
+            
+            # Check min_price constraint
+            if 'min_price' in constraints and price < constraints['min_price']:
+                continue
+            
+            # Check max_price constraint
+            if 'max_price' in constraints and price > constraints['max_price']:
+                continue
+            
+            filtered.append(row)
+        
+        return filtered
 
     def _execute_code(self, code: str, max_rows: Optional[int] = None) -> List[Dict[str, Any]]:
         """Execute generated pandas code with safety checks."""
@@ -641,7 +763,7 @@ class UnitSelector:
         explicit_codes = {match.group(1) for match in code_pattern.finditer(compact)}
 
         number_pattern = re.compile(
-            r"(?:كود|code|id|رقم)\s*(?:وحدة|شقة|الشقة|الشقه|#|بتاعها|هو|هي|:)?\s*(\d{2,})",
+            r"(?:كود|code|id|رقم|وحدة)\s*(?:وحدة|شقة|الشقة|الشقه|#|بتاعها|هو|هي|:)?\s*(\d{2,})",
             re.IGNORECASE,
         )
         # Extract numeric IDs from the provided text source (question and/or history)
@@ -649,6 +771,70 @@ class UnitSelector:
             match.group(1).lstrip("0") or match.group(1)
             for match in number_pattern.finditer(text_source)
         }
+        
+        # NEW: Extract building+unit format (e.g., "مبنى 27/I رقم 202" or "building 27/I unit 202")
+        # Also handle "الوحدة دي رقم 202 في مبنى 27/I" format
+        # Improved pattern: more flexible spacing and word order
+        building_unit_pattern = re.compile(
+            r"(?:مبنى|building|المبنى)\s*([0-9]+/[A-Z]+).*?(?:رقم|unit|#|كود|code|الوحدة|وحدة)\s*(\d{2,})",
+            re.IGNORECASE
+        )
+        # Also handle reverse order: "رقم 202 في مبنى 27/I" or "الوحدة دي رقم 202 في مبنى 27/I"
+        building_unit_pattern_reverse = re.compile(
+            r"(?:رقم|unit|#|كود|code|الوحدة|وحدة|الوحدة\s+دي)\s*(\d{2,}).*?(?:مبنى|building|المبنى|في)\s*([0-9]+/[A-Z]+)",
+            re.IGNORECASE
+        )
+        # Handle "في مبنى X/Y رقم Z" pattern
+        building_unit_pattern_in = re.compile(
+            r"في\s+(?:مبنى|building|المبنى)\s*([0-9]+/[A-Z]+).*?(?:رقم|unit|#|كود|code)\s*(\d{2,})",
+            re.IGNORECASE
+        )
+        
+        building_unit_matches = list(building_unit_pattern.finditer(text_source))
+        building_unit_matches.extend(building_unit_pattern_reverse.finditer(text_source))
+        building_unit_matches.extend(building_unit_pattern_in.finditer(text_source))
+        
+        # Store building+unit pairs for more precise matching
+        building_unit_pairs = []
+        for match in building_unit_matches:
+            if len(match.groups()) == 2:
+                group1 = match.group(1)
+                group2 = match.group(2)
+                match_text = match.group(0).lower()
+                
+                # Determine which pattern matched by checking group content
+                # Pattern 1 & 3: building first (format: number/letter), unit second (digits)
+                # Pattern 2: unit first (digits), building second (format: number/letter)
+                
+                # Check if group1 is building format (number/letter) and group2 is unit number (digits)
+                is_building_format = bool(re.match(r'^\d+/[A-Z]+$', group1, re.IGNORECASE))
+                is_unit_number = bool(re.match(r'^\d+$', group2))
+                
+                # Check if group1 is unit number and group2 is building format
+                is_unit_first = bool(re.match(r'^\d+$', group1))
+                is_building_second = bool(re.match(r'^\d+/[A-Z]+$', group2, re.IGNORECASE))
+                
+                if is_building_format and is_unit_number:
+                    # Pattern 1 or 3: building first, unit second
+                    building = group1  # e.g., "27/I"
+                    unit_num = group2.lstrip("0") or group2  # e.g., "202"
+                elif is_unit_first and is_building_second:
+                    # Pattern 2: unit first, building second
+                    unit_num = group1.lstrip("0") or group1  # e.g., "202"
+                    building = group2  # e.g., "27/I"
+                else:
+                    # Fallback: try to infer from context
+                    # If "في" appears before building, it's likely pattern 2
+                    if 'في' in match_text and match_text.find('في') < match_text.find(group2.lower() if is_building_second else ''):
+                        unit_num = group1.lstrip("0") or group1
+                        building = group2
+                    else:
+                        building = group1
+                        unit_num = group2.lstrip("0") or group2
+                
+                building_unit_pairs.append((building, unit_num))
+                explicit_numbers.add(unit_num)
+                logger.debug(f"Extracted building+unit pair: building={building}, unit={unit_num} from '{match.group(0)}'")
         
         # Also extract standalone numbers (2+ digits) that might be unit IDs
         # This helps when additional message contains just numbers like "203"
@@ -667,6 +853,30 @@ class UnitSelector:
         if explicit_codes and not self._normalized_codes.empty:
             normalized_targets = {code.lower() for code in explicit_codes}
             mask |= self._normalized_codes.isin(normalized_targets)
+        
+        # NEW: Handle building+unit pairs for more precise matching
+        if building_unit_pairs and not self._normalized_codes.empty:
+            for building, unit_num in building_unit_pairs:
+                # Try to find codes that match the building pattern and end with the unit number
+                # Building format in CSV: "27/I", Code format: "Hawabay/27/I/202"
+                # So we need to match codes containing "/27/I/" and ending with "/202"
+                building_pattern = f"/{building}/"
+                # Also try matching by Building column if available
+                if "Building" in self._df_cache.columns:
+                    building_col_mask = self._df_cache["Building"].astype(str).str.strip() == building
+                    name_col_mask = self._name_strings == unit_num
+                    building_name_mask = building_col_mask & name_col_mask
+                    mask |= building_name_mask
+                
+                # Match by code pattern: Project/Building/Name
+                code_pattern_mask = (
+                    self._normalized_codes.str.contains(building_pattern, case=False, na=False) &
+                    self._normalized_codes.str.endswith(f"/{unit_num}", na=False)
+                )
+                mask |= code_pattern_mask
+                
+                logger.debug(f"Building+unit matching: building={building}, unit={unit_num}, matches={mask.sum()}")
+        
         if explicit_numbers:
             if not self._name_strings.empty:
                 mask |= self._name_strings.isin(explicit_numbers)

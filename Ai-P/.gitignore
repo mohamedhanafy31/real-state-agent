@@ -42,3 +42,6 @@ next-env.d.ts
 
 # ngrok
 .ngrok-tunnels.json
+
+# user data
+/data
